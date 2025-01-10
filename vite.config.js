@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
   server: {
-    port: 3000
+    host: true,
+    port: 4173, // Render.com için port
+  },
+  preview: {
+    host: true,
+    port: 4173, // Render.com için port
   }
 })
