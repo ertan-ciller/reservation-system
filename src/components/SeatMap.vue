@@ -8,19 +8,21 @@ const sections = {
   leftFront: {
     rows: 12,
     seatsPerRow: 12,
-    angle: 23,
+    angle: 18,
     startNumber: 2,
     startRow: 'A',
     increment: 2,
     rowLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
   },
   leftBack: {
-    rows: 17,
+    rows: 11,
     seatsPerRow: 10,
-    angle: 23,
+    angle: 18,
     startNumber: 2,
     startRow: 'M',
-    increment: 2
+    increment: 2,
+    skipRows: ['Q', 'W', 'X'],
+    rowLetters: ['M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'Y', 'Z']
   },
   centerFront: {
     rows: 12,
@@ -44,19 +46,21 @@ const sections = {
   rightFront: {
     rows: 12,
     seatsPerRow: 15,
-    angle: -23,
+    angle: -18,
     startNumber: 1,
     startRow: 'A',
     increment: 1,
     rowLetters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
   },
   rightBack: {
-    rows: 14,
+    rows: 11,
     seatsPerRow: 20,
-    angle: -23,
+    angle: -18,
     startNumber: 1,
     startRow: 'M',
-    increment: 2
+    increment: 2,
+    skipRows: ['Q', 'W', 'X'],
+    rowLetters: ['M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'Y', 'Z']
   }
 }
 
@@ -419,7 +423,7 @@ const generateSeats = (section) => {
     }
     // Sağ arka blok için özel numaralandırma
     else if (section === sections.rightBack) {
-      const currentRowLetter = String.fromCharCode(currentRow)
+      const currentRowLetter = section.rowLetters ? section.rowLetters[rowIndex - 1] : String.fromCharCode(currentRow)
       
       // M sırası: 1-23 arası, 12 koltuk
       if (currentRowLetter === 'M') {
@@ -434,8 +438,8 @@ const generateSeats = (section) => {
           })
         }
       }
-      // N ve O sıraları: 1-25 arası, 13 koltuk
-      else if (currentRowLetter === 'N' || currentRowLetter === 'O') {
+      // N sırası: 1-25 arası, 13 koltuk
+      else if (currentRowLetter === 'N') {
         const totalSeats = 13
         const maxNumber = 25
         for (let i = 0; i < totalSeats; i++) {
@@ -447,12 +451,39 @@ const generateSeats = (section) => {
           })
         }
       }
-      // P, Q ve R sıraları: 2-28 arası, 14 koltuk
-      else if (currentRowLetter === 'P' || currentRowLetter === 'Q' || currentRowLetter === 'R') {
-        const totalSeats = 14
+      // O sırası: 1-25 arası, 13 koltuk
+      else if (currentRowLetter === 'O') {
+        const totalSeats = 13
+        const maxNumber = 25
         for (let i = 0; i < totalSeats; i++) {
           rowSeats.push({
-            id: 2 + (i * 2),
+            id: maxNumber - (i * 2),
+            row: currentRowLetter,
+            seat: i + 1,
+            reserved: false
+          })
+        }
+      }
+      // P sırası: 1-27 arası, 14 koltuk
+      else if (currentRowLetter === 'P') {
+        const totalSeats = 14
+        const maxNumber = 27
+        for (let i = 0; i < totalSeats; i++) {
+          rowSeats.push({
+            id: maxNumber - (i * 2),
+            row: currentRowLetter,
+            seat: i + 1,
+            reserved: false
+          })
+        }
+      }
+      // R sırası: 1-27 arası, 14 koltuk
+      else if (currentRowLetter === 'R') {
+        const totalSeats = 14
+        const maxNumber = 27
+        for (let i = 0; i < totalSeats; i++) {
+          rowSeats.push({
+            id: maxNumber - (i * 2),
             row: currentRowLetter,
             seat: i + 1,
             reserved: false
@@ -485,8 +516,21 @@ const generateSeats = (section) => {
           })
         }
       }
-      // U ve V sıraları: 1-37 arası, 19 koltuk
-      else if (currentRowLetter === 'U' || currentRowLetter === 'V') {
+      // U sırası: 1-37 arası, 19 koltuk
+      else if (currentRowLetter === 'U') {
+        const totalSeats = 19
+        const maxNumber = 37
+        for (let i = 0; i < totalSeats; i++) {
+          rowSeats.push({
+            id: maxNumber - (i * 2),
+            row: currentRowLetter,
+            seat: i + 1,
+            reserved: false
+          })
+        }
+      }
+      // V sırası: 1-37 arası, 19 koltuk
+      else if (currentRowLetter === 'V') {
         const totalSeats = 19
         const maxNumber = 37
         for (let i = 0; i < totalSeats; i++) {
@@ -551,7 +595,7 @@ const generateSeats = (section) => {
     }
     // Sol arka blok için özel numaralandırma
     else if (section === sections.leftBack) {
-      const currentRowLetter = String.fromCharCode(currentRow)
+      const currentRowLetter = section.rowLetters ? section.rowLetters[rowIndex - 1] : String.fromCharCode(currentRow)
       
       // M sırası: 2-24 arası, 12 koltuk
       if (currentRowLetter === 'M') {
@@ -589,8 +633,20 @@ const generateSeats = (section) => {
           })
         }
       }
-      // P ve R sıraları: 2-28 arası, 14 koltuk
-      else if (currentRowLetter === 'P' || currentRowLetter === 'R') {
+      // P sırası: 2-28 arası, 14 koltuk
+      else if (currentRowLetter === 'P') {
+        const totalSeats = 14
+        for (let i = 0; i < totalSeats; i++) {
+          rowSeats.push({
+            id: 2 + (i * 2),
+            row: currentRowLetter,
+            seat: i + 1,
+            reserved: false
+          })
+        }
+      }
+      // R sırası: 2-28 arası, 14 koltuk
+      else if (currentRowLetter === 'R') {
         const totalSeats = 14
         for (let i = 0; i < totalSeats; i++) {
           rowSeats.push({
@@ -625,8 +681,20 @@ const generateSeats = (section) => {
           })
         }
       }
-      // U ve V sıraları: 2-38 arası, 19 koltuk
-      else if (currentRowLetter === 'U' || currentRowLetter === 'V') {
+      // U sırası: 2-38 arası, 19 koltuk
+      else if (currentRowLetter === 'U') {
+        const totalSeats = 19
+        for (let i = 0; i < totalSeats; i++) {
+          rowSeats.push({
+            id: 2 + (i * 2),
+            row: currentRowLetter,
+            seat: i + 1,
+            reserved: false
+          })
+        }
+      }
+      // V sırası: 2-38 arası, 19 koltuk
+      else if (currentRowLetter === 'V') {
         const totalSeats = 19
         for (let i = 0; i < totalSeats; i++) {
           rowSeats.push({
@@ -1051,31 +1119,17 @@ const handleSeatClick = (seat) => {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0.5rem;
-  transform: scale(0.7);
+  padding: 2rem;
+  transform: scale(0.65);
   transform-origin: top center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .stage {
-  position: relative;
-  width: 60%;
-  height: 50px;
-  margin: 0 auto 3rem;
-  background: linear-gradient(45deg, #2c3e50, #3498db);
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: perspective(500px) rotateX(10deg);
-}
-
-.stage-label {
-  color: white;
-  font-size: 1.5rem;
-  font-weight: bold;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  letter-spacing: 4px;
+  display: none;
 }
 
 .sections {
@@ -1084,8 +1138,10 @@ const handleSeatClick = (seat) => {
   gap: clamp(0.5rem, 1vw, 1.5rem);
   perspective: 1000px;
   width: 100%;
-  overflow: visible;
+  margin: 0 auto;
   padding: 0 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .section-group {
@@ -1119,14 +1175,6 @@ const handleSeatClick = (seat) => {
   gap: clamp(0.1rem, 0.2vw, 0.25rem);
   transform-style: preserve-3d;
   transition: transform 0.3s ease;
-}
-
-.section.front {
-  margin-bottom: 1rem;
-}
-
-.section.back {
-  margin-top: -1rem;
 }
 
 .row {
@@ -1190,109 +1238,50 @@ const handleSeatClick = (seat) => {
   color: white;
 }
 
-@media (max-width: 1400px) {
+/* Tablet ve mobil için responsive tasarım */
+@media (max-width: 1024px) {
   .seat-map {
-    transform: scale(0.65);
-  }
-  
-  .section-group {
-    gap: 3rem;
-  }
-  
-  .section-group.right .section.back {
-    margin-top: 1.5rem;
+    transform: scale(1);
+    width: 100%;
+    height: auto;
+    overflow-x: auto;
+    padding: 0;
   }
 
-  .section-group.left .section.back {
-    margin-top: 1.5rem;
-  }
-}
-
-@media (max-width: 1200px) {
-  .seat-map {
-    transform: scale(0.6);
-  }
-  
   .sections {
-    gap: clamp(0.4rem, 0.8vw, 1.2rem);
-  }
-  
-  .section-group {
-    gap: 2.5rem;
-  }
-  
-  .section-group.right .section.back {
-    margin-top: 1.2rem;
+    width: max-content;
+    padding: 1rem;
   }
 
-  .section-group.left .section.back {
-    margin-top: 1.2rem;
-  }
-}
-
-@media (max-width: 992px) {
-  .seat-map {
-    transform: scale(0.55);
-  }
-  
-  .sections {
-    padding: 0 0.5rem;
-  }
-  
-  .section-group {
-    gap: 2rem;
-  }
-  
-  .section-group.right .section.back {
-    margin-top: 1rem;
+  .section-group.left,
+  .section-group.right {
+    transform: none;
   }
 
-  .section-group.left .section.back {
-    margin-top: 1rem;
+  .seat {
+    width: 20px;
+    height: 20px;
+  }
+
+  .seat-number {
+    font-size: 0.5rem;
   }
 }
 
 @media (max-width: 768px) {
   .seat-map {
-    transform: scale(0.5);
-  }
-  
-  .sections {
-    padding: 0 0.25rem;
-  }
-  
-  .section-group {
-    gap: 1.5rem;
-  }
-  
-  .section-group.right .section.back {
-    margin-top: 0.8rem;
-  }
-
-  .section-group.left .section.back {
-    margin-top: 0.8rem;
+    transform: scale(0.8);
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 480px) {
   .seat-map {
-    transform: scale(0.45);
-  }
-  
-  .sections {
-    padding: 0;
-  }
-  
-  .section-group {
-    gap: 1rem;
-  }
-  
-  .section-group.right .section.back {
-    margin-top: 0.5rem;
+    transform: scale(0.6);
   }
 
-  .section-group.left .section.back {
-    margin-top: 0.5rem;
+  .seat {
+    width: 18px;
+    height: 18px;
   }
 }
 </style> 

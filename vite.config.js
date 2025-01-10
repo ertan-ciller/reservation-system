@@ -6,10 +6,10 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     host: true,
-    port: 4173, // Render.com için port
+    port: 3000 // Development için port
   },
   preview: {
     host: true,
-    port: 4173, // Render.com için port
+    port: 4173 // Production preview için port
   }
 })
