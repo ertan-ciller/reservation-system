@@ -1006,9 +1006,10 @@ const rightFrontSeats = ref(generateSeats(sections.rightFront))
 const rightBackSeats = ref(generateSeats(sections.rightBack))
 
 const handleSeatClick = (seat) => {
-  if (!seat.reserved) {
-    emit('seat-select', seat.id)
-  }
+  emit('seat-select', {
+    seatNumber: seat.id,
+    rowLabel: seat.row
+  })
 }
 </script>
 

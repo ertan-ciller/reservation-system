@@ -2,25 +2,52 @@
 import { ref } from 'vue'
 import SeatMap from './components/SeatMap.vue'
 import ReservationDialog from './components/ReservationDialog.vue'
+import { reservationService } from './services/reservationService'
 
 const selectedSeat = ref(null)
 const isDialogOpen = ref(false)
+const isLoading = ref(false)
+const errorMessage = ref('')
 
-const handleSeatSelect = (seatNumber) => {
-  selectedSeat.value = seatNumber
+const handleSeatSelect = (seat) => {
+  selectedSeat.value = seat
   isDialogOpen.value = true
+  errorMessage.value = ''
 }
 
 const handleDialogClose = () => {
   isDialogOpen.value = false
   selectedSeat.value = null
+  errorMessage.value = ''
 }
 
-const handleReservation = (userInfo) => {
-  // Here we'll handle the reservation data
-  console.log('Reservation made:', { seat: selectedSeat.value, ...userInfo })
-  isDialogOpen.value = false
-  selectedSeat.value = null
+const handleReservation = async (userInfo) => {
+  try {
+    isLoading.value = true
+    errorMessage.value = ''
+
+    const reservationData = {
+      firstName: userInfo.firstName,
+      lastName: userInfo.lastName,
+      phoneNumber: userInfo.phoneNumber,
+      seatId: userInfo.seatId
+    }
+
+    const result = await reservationService.createReservation(reservationData)
+
+    if (result.success) {
+      isDialogOpen.value = false
+      selectedSeat.value = null
+      alert('Rezervasyonunuz başarıyla oluşturuldu!')
+    } else {
+      errorMessage.value = result.error
+    }
+  } catch (error) {
+    errorMessage.value = 'Rezervasyon oluşturulurken bir hata oluştu.'
+    console.error('Rezervasyon hatası:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -28,7 +55,6 @@ const handleReservation = (userInfo) => {
   <div class="app">
     <header>
       <h1>Gösteri Rezervasyon Sistemi</h1>
-      
     </header>
     <div class="stage-label">SAHNE</div>
     
@@ -37,7 +63,10 @@ const handleReservation = (userInfo) => {
       
       <ReservationDialog
         v-if="isDialogOpen"
-        :seat-number="selectedSeat"
+        :seat-number="selectedSeat?.seatNumber"
+        :row-label="selectedSeat?.rowLabel"
+        :is-loading="isLoading"
+        :error-message="errorMessage"
         @close="handleDialogClose"
         @submit="handleReservation"
       />

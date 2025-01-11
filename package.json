@@ -9,6 +9,7 @@
     "preview": "vite preview --host --port 4173"
   },
   "dependencies": {
+    "firebase": "^11.1.0",
     "vue": "^3.3.11"
   },
   "devDependencies": {
