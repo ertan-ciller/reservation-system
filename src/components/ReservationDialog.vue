@@ -35,7 +35,7 @@ const errors = ref({
 })
 
 const validatePhone = (phone) => {
-  const phoneRegex = /^(05\d{9})$/
+  const phoneRegex = /^(5\d{9})$/
   return phoneRegex.test(phone)
 }
 
@@ -60,7 +60,7 @@ const handleSubmit = async () => {
   }
 
   if (!validatePhone(formData.value.phone)) {
-    errors.value.phone = 'Geçerli bir telefon numarası giriniz (05XXXXXXXXX)'
+    errors.value.phone = 'Geçerli bir telefon numarası giriniz (5XXXXXXXXX)'
     hasError = true
   }
 
@@ -144,7 +144,7 @@ const handleSubmit = async () => {
               type="tel"
               required
               placeholder="5XX XXX XX XX"
-              maxlength="11"
+              maxlength="10"
               :class="{ 'error-input': errors.phone }"
             >
           </div>
