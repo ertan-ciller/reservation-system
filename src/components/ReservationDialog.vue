@@ -65,15 +65,14 @@ const handleSubmit = async () => {
   }
 
   if (!hasError) {
-    const seatId = String(props.seatNumber); // String'e çevir
     const reservationData = {
       firstName: formData.value.firstName.trim(),
       lastName: formData.value.lastName.trim(),
       phoneNumber: formData.value.phone,
       seatId: {
-        id: seatId,
+        id: props.seatNumber,
         row: props.rowLabel,
-        numericId: parseInt(seatId)
+        numericId: parseInt(props.seatNumber)
       }
     }
 
@@ -92,7 +91,7 @@ const handleSubmit = async () => {
     <div class="dialog" @click.stop>
       <div class="dialog-header">
         <div class="seat-info">
-          <h2>{{ rowLabel }}-{{ seatNumber }} için Rezervasyon</h2>
+          <h2>{{ rowLabel }} Sıra {{ seatNumber }} Nolu Koltuk için Rezervasyon</h2>
         </div>
         <button class="close-button" @click="emit('close')">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

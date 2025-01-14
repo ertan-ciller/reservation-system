@@ -1,7 +1,39 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { db } from '../services/firebase'
 
 const emit = defineEmits(['seat-select'])
+const reservedSeats = ref(new Set())
+
+// Firestore'dan rezervasyonları dinle
+let unsubscribe = null
+
+onMounted(() => {
+  const q = query(
+    collection(db, 'reservations'),
+    where('status', 'in', ['pending', 'approved'])
+  )
+  
+  unsubscribe = onSnapshot(q, (snapshot) => {
+    const reserved = new Set()
+    snapshot.forEach((doc) => {
+      const data = doc.data()
+      // Benzersiz tanımlayıcı oluştur: "sıra-numara" formatında
+      const seatIdentifier = `${data.seatRow}-${data.seatNumber}`
+      console.log('Rezerve edilen koltuk:', seatIdentifier)
+      reserved.add(seatIdentifier)
+    })
+    reservedSeats.value = reserved
+    console.log('Tüm rezerve koltuklar:', Array.from(reservedSeats.value))
+  })
+})
+
+onUnmounted(() => {
+  if (unsubscribe) {
+    unsubscribe()
+  }
+})
 
 // Define the seating sections
 const sections = {
@@ -1006,10 +1038,24 @@ const rightFrontSeats = ref(generateSeats(sections.rightFront))
 const rightBackSeats = ref(generateSeats(sections.rightBack))
 
 const handleSeatClick = (seat) => {
+  // Benzersiz tanımlayıcı oluştur
+  const seatIdentifier = `${seat.row}-${seat.id}`
+  if (reservedSeats.value.has(seatIdentifier)) {
+    return // Rezerve edilmiş koltuklar seçilemez
+  }
   emit('seat-select', {
-    seatNumber: seat.id,
-    rowLabel: seat.row
+    id: seat.id,                    // Koltuk ID'si
+    rowLabel: seat.row,             // Sıra harfi (örn: M)
+    seatNumber: seat.id,            // Görünen koltuk numarası
+    numericId: seat.id,             // Benzersiz numara
+    seatFullId: seatIdentifier      // Benzersiz tanımlayıcı (örn: M-26)
   })
+}
+
+// Koltuk rezerve kontrolü için yardımcı fonksiyon
+const isSeatReserved = (row, seatNumber) => {
+  const seatIdentifier = `${row}-${seatNumber}`
+  return reservedSeats.value.has(seatIdentifier)
 }
 </script>
 
@@ -1027,7 +1073,7 @@ const handleSeatClick = (seat) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: seat.reserved }"
+              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1041,7 +1087,7 @@ const handleSeatClick = (seat) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: seat.reserved }"
+              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1058,7 +1104,7 @@ const handleSeatClick = (seat) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: seat.reserved }"
+              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1072,7 +1118,7 @@ const handleSeatClick = (seat) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: seat.reserved }"
+              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1089,7 +1135,7 @@ const handleSeatClick = (seat) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: seat.reserved }"
+              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1103,7 +1149,7 @@ const handleSeatClick = (seat) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: seat.reserved }"
+              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>

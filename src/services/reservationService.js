@@ -47,6 +47,7 @@ export const reservationService = {
         seatId: reservationData.seatId.id,
         seatRow: reservationData.seatId.row,
         seatNumber: reservationData.seatId.numericId,
+        seatFullId: `${reservationData.seatId.row}-${reservationData.seatId.numericId}`,
         status: 'pending',
         createdAt: Timestamp.now(),
         expirationTime: Timestamp.fromDate(expirationTime)
@@ -108,9 +109,11 @@ export const reservationService = {
         return false;
       }
 
+      const seatFullId = `${seatId.row}-${seatId.numericId}`;
+
       const q = query(
         collection(db, 'reservations'),
-        where('seatId', '==', seatId.id),
+        where('seatFullId', '==', seatFullId),
         where('status', 'in', ['pending', 'approved'])
       );
       
