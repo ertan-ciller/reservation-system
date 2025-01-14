@@ -23,15 +23,29 @@ export const reservationService = {
         throw new Error('Geçersiz rezervasyon verisi');
       }
 
-      // Koltuğun müsaitlik durumunu kontrol et
-      const isAvailable = await this.checkSeatAvailability(reservationData.seatId);
-      if (!isAvailable) {
+      // Telefon numarasını formatla (başındaki 0'ı kaldır)
+      const formattedPhone = reservationData.phoneNumber.replace(/^0+/, '');
+
+      // Tek bir sorgu ile hem koltuk müsaitliğini hem de kullanıcı rezervasyonlarını kontrol et
+      const seatFullId = `${reservationData.seatId.row}-${reservationData.seatId.numericId}`;
+      
+      const reservationsQuery = query(
+        collection(db, 'reservations'),
+        where('status', 'in', ['pending', 'approved'])
+      );
+      
+      const querySnapshot = await getDocs(reservationsQuery);
+      const reservations = querySnapshot.docs.map(doc => doc.data());
+      
+      // Koltuk müsaitliğini kontrol et
+      const isSeatTaken = reservations.some(res => res.seatFullId === seatFullId);
+      if (isSeatTaken) {
         throw new Error('Seçilen koltuk başkası tarafından rezerve edilmiş.');
       }
 
-      // Kullanıcının mevcut rezervasyonlarını kontrol et
-      const userReservations = await this.getUserReservations(reservationData.phoneNumber);
-      if (userReservations.length >= 5) {
+      // Kullanıcının rezervasyon sayısını kontrol et
+      const userReservationCount = reservations.filter(res => res.phoneNumber === formattedPhone).length;
+      if (userReservationCount >= 5) {
         throw new Error('Bir kullanıcı en fazla 5 koltuk rezerve edebilir.');
       }
 
@@ -43,11 +57,11 @@ export const reservationService = {
       const reservation = {
         firstName: reservationData.firstName,
         lastName: reservationData.lastName,
-        phoneNumber: reservationData.phoneNumber,
+        phoneNumber: formattedPhone,
         seatId: reservationData.seatId.id,
         seatRow: reservationData.seatId.row,
         seatNumber: reservationData.seatId.numericId,
-        seatFullId: `${reservationData.seatId.row}-${reservationData.seatId.numericId}`,
+        seatFullId,
         status: 'pending',
         createdAt: Timestamp.now(),
         expirationTime: Timestamp.fromDate(expirationTime)
@@ -56,8 +70,8 @@ export const reservationService = {
       // Rezervasyonu kaydet
       const docRef = await addDoc(collection(db, 'reservations'), reservation);
       
-      // Süresi dolmuş rezervasyonları temizle
-      await this.cleanExpiredReservations();
+      // Süresi dolmuş rezervasyonları arka planda temizle
+      this.cleanExpiredReservations().catch(console.error);
 
       // Başarılı sonucu döndür
       return { 

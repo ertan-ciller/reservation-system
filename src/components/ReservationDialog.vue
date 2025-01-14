@@ -143,7 +143,7 @@ const handleSubmit = async () => {
               v-model="formData.phone"
               type="tel"
               required
-              placeholder="05XX XXX XX XX"
+              placeholder="5XX XXX XX XX"
               maxlength="11"
               :class="{ 'error-input': errors.phone }"
             >
