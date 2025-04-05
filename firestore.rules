@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Yardımcı fonksiyonlar
+    function isValidReservation() {
+      return request.resource.data.firstName != null &&
+             request.resource.data.lastName != null &&
+             request.resource.data.phoneNumber != null &&
+             request.resource.data.seatId != null;
+    }
+
+    function isValidLock() {
+      return request.resource.data.lockedBy != null &&
+             request.resource.data.lockedUntil != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'admin@test.com';
+    }
+
+    // Rezervasyonlar için kurallar
+    match /reservations/{reservationId} {
+      allow read: if true;
+      allow create: if isValidReservation();
+      allow update, delete: if isAdmin(); // Sadece admin güncelleyebilir ve silebilir
+    }
+    
+    // Koltuk kilitleri için kurallar
+    match /seatLocks/{seatId} {
+      allow read: if true;
+      allow create, update: if isValidLock();
+      allow delete: if true;
+    }
+  }
+} 

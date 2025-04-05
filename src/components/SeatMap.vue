@@ -4,7 +4,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '../services/firebase'
 
 const emit = defineEmits(['seat-select'])
-const reservedSeats = ref(new Set())
+const reservedSeats = ref(new Map())
 
 // Firestore'dan rezervasyonları dinle
 let unsubscribe = null
@@ -16,16 +16,16 @@ onMounted(() => {
   )
   
   unsubscribe = onSnapshot(q, (snapshot) => {
-    const reserved = new Set()
+    const reserved = new Map()
     snapshot.forEach((doc) => {
       const data = doc.data()
       // Benzersiz tanımlayıcı oluştur: "sıra-numara" formatında
       const seatIdentifier = `${data.seatRow}-${data.seatNumber}`
-      console.log('Rezerve edilen koltuk:', seatIdentifier)
-      reserved.add(seatIdentifier)
+      console.log('Rezerve edilen koltuk:', seatIdentifier, 'Durum:', data.status)
+      reserved.set(seatIdentifier, data.status)
     })
     reservedSeats.value = reserved
-    console.log('Tüm rezerve koltuklar:', Array.from(reservedSeats.value))
+    console.log('Tüm rezerve koltuklar:', Array.from(reservedSeats.value.entries()))
   })
 })
 
@@ -1057,6 +1057,12 @@ const isSeatReserved = (row, seatNumber) => {
   const seatIdentifier = `${row}-${seatNumber}`
   return reservedSeats.value.has(seatIdentifier)
 }
+
+// Koltuk durumunu kontrol eden fonksiyon
+const getSeatStatus = (row, seatNumber) => {
+  const seatIdentifier = `${row}-${seatNumber}`
+  return reservedSeats.value.get(seatIdentifier)
+}
 </script>
 
 <template>
@@ -1073,7 +1079,11 @@ const isSeatReserved = (row, seatNumber) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
+              :class="{
+                'reserved': isSeatReserved(seat.row, seat.id),
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+              }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1087,7 +1097,11 @@ const isSeatReserved = (row, seatNumber) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
+              :class="{
+                'reserved': isSeatReserved(seat.row, seat.id),
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+              }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1096,7 +1110,7 @@ const isSeatReserved = (row, seatNumber) => {
         </div>
       </div>
 
-      <div class="section-group center">
+      <div class="section-group center" style="margin-top: 5rem;">
         <div class="section front">
           <div v-for="(row, rowIndex) in centerFrontSeats" :key="'centerFront-'+rowIndex" class="row">
             <div class="row-number" v-if="row && row.length > 0">{{ row[0].row }}</div>
@@ -1104,7 +1118,11 @@ const isSeatReserved = (row, seatNumber) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
+              :class="{
+                'reserved': isSeatReserved(seat.row, seat.id),
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+              }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1118,7 +1136,11 @@ const isSeatReserved = (row, seatNumber) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
+              :class="{
+                'reserved': isSeatReserved(seat.row, seat.id),
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+              }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1135,7 +1157,11 @@ const isSeatReserved = (row, seatNumber) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
+              :class="{
+                'reserved': isSeatReserved(seat.row, seat.id),
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+              }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1149,7 +1175,11 @@ const isSeatReserved = (row, seatNumber) => {
               v-for="seat in row"
               :key="seat.id"
               class="seat"
-              :class="{ reserved: isSeatReserved(seat.row, seat.id) }"
+              :class="{
+                'reserved': isSeatReserved(seat.row, seat.id),
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+              }"
               @click="handleSeatClick(seat)"
             >
               <span class="seat-number">{{ seat.id }}</span>
@@ -1165,7 +1195,7 @@ const isSeatReserved = (row, seatNumber) => {
 .seat-map {
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
+  margin: 22px;
   padding: 2rem;
   transform: scale(0.65);
   transform-origin: top center;
@@ -1207,12 +1237,12 @@ const isSeatReserved = (row, seatNumber) => {
 }
 
 .section-group.right .section.back {
-  margin-top: 1.5rem;
+  margin-top: 0rem;
   transform-origin: top center;
 }
 
 .section-group.left .section.back {
-  margin-top: 1.5rem;
+  margin-top: 0rem;
   transform-origin: top center;
 }
 
@@ -1275,13 +1305,22 @@ const isSeatReserved = (row, seatNumber) => {
 }
 
 .seat.reserved {
-  background: #ff5252;
-  border-color: #ff1744;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-.seat.reserved .seat-number {
+.seat.pending {
+  background: #ff5252;
+  border-color: #ff1744;
+}
+
+.seat.approved {
+  background: #4caf50;
+  border-color: #388e3c;
+}
+
+.seat.pending .seat-number,
+.seat.approved .seat-number {
   color: white;
 }
 

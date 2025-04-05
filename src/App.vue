@@ -1,80 +1,27 @@
 <script setup>
-import { ref } from 'vue'
-import SeatMap from './components/SeatMap.vue'
-import ReservationDialog from './components/ReservationDialog.vue'
-import { reservationService } from './services/reservationService'
-
-const selectedSeat = ref(null)
-const isDialogOpen = ref(false)
-const isLoading = ref(false)
-const errorMessage = ref('')
-
-const handleSeatSelect = (seat) => {
-  selectedSeat.value = seat
-  isDialogOpen.value = true
-  errorMessage.value = ''
-}
-
-const handleDialogClose = () => {
-  isDialogOpen.value = false
-  selectedSeat.value = null
-  errorMessage.value = ''
-}
-
-const handleReservation = async (userInfo) => {
-  try {
-    isLoading.value = true
-    errorMessage.value = ''
-
-    const reservationData = {
-      firstName: userInfo.firstName,
-      lastName: userInfo.lastName,
-      phoneNumber: userInfo.phoneNumber,
-      seatId: userInfo.seatId
-    }
-
-    const result = await reservationService.createReservation(reservationData)
-
-    if (result.success) {
-      isDialogOpen.value = false
-      selectedSeat.value = null
-      alert('Rezervasyonunuz başarıyla oluşturuldu!')
-    } else {
-      errorMessage.value = result.error
-    }
-  } catch (error) {
-    errorMessage.value = 'Rezervasyon oluşturulurken bir hata oluştu.'
-    console.error('Rezervasyon hatası:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
+// Router view kullanacağımız için bu importlara gerek yok
 </script>
 
 <template>
-  <div class="app">
-    <header>
-      <h1>Gösteri Rezervasyon Sistemi</h1>
-    </header>
-    <div class="stage-label">SAHNE</div>
-    
-    <main>
-      <SeatMap @seat-select="handleSeatSelect" />
-      
-      <ReservationDialog
-        v-if="isDialogOpen"
-        :seat-number="selectedSeat?.seatNumber"
-        :row-label="selectedSeat?.rowLabel"
-        :is-loading="isLoading"
-        :error-message="errorMessage"
-        @close="handleDialogClose"
-        @submit="handleReservation"
-      />
-    </main>
-  </div>
+  <router-view />
 </template>
 
 <style>
+/* Global stiller */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 .app {
   width: 100%;
   max-width: 100%;
