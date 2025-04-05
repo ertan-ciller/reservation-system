@@ -1195,7 +1195,7 @@ const getSeatStatus = (row, seatNumber) => {
 .seat-map {
   width: 100%;
   max-width: 100%;
-  margin: 22px;
+  margin: 50px;
   padding: 2rem;
   transform: scale(0.65);
   transform-origin: top center;
@@ -1230,10 +1230,12 @@ const getSeatStatus = (row, seatNumber) => {
 
 .section-group.left {
   transform: translateX(3.5rem);
+  margin-top: 2rem;
 }
 
 .section-group.right {
   transform: translateX(-3.5rem);
+  margin-top: 2rem;
 }
 
 .section-group.right .section.back {
@@ -1327,7 +1329,7 @@ const getSeatStatus = (row, seatNumber) => {
 /* Tablet ve mobil için responsive tasarım */
 @media (max-width: 1024px) {
   .seat-map {
-    transform: scale(1);
+    transform: scale(2);
     width: 100%;
     height: auto;
     overflow-x: auto;

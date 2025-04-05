@@ -78,7 +78,6 @@ const handleReservation = async (userInfo) => {
 .home {
   width: 100%;
   min-height: 100vh;
-  padding: 2rem;
 }
 
 header {
@@ -94,9 +93,9 @@ h1 {
 
 .stage-label {
   position: relative;
-  width: 60%;
+  width: 80%;
   min-width: 300px;
-  height: 40px;
+  height: 55px;
   margin: 0 auto 3rem;
   background: linear-gradient(90deg, #2c5282, #3182ce);
   border-radius: 8px 8px 0 0;
@@ -163,7 +162,7 @@ main {
   .stage-label {
     width: 90%;
     min-width: 200px;
-    height: 30px;
+    height: 55px;
     font-size: 0.9rem;
     margin-bottom: 1.5rem;
   }
