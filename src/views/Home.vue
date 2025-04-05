@@ -54,7 +54,7 @@ const handleReservation = async (userInfo) => {
 <template>
   <div class="home">
     <header>
-      <h1>Gösteri Rezervasyon Sistemi</h1>
+      <h1></h1>
     </header>
     <div class="stage-label">SAHNE</div>
     
