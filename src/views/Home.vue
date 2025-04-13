@@ -4,20 +4,36 @@ import SeatMap from '../components/SeatMap.vue'
 import ReservationDialog from '../components/ReservationDialog.vue'
 import { reservationService } from '../services/reservationService'
 
-const selectedSeat = ref(null)
+const selectedSeats = ref([])
 const isDialogOpen = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
 
 const handleSeatSelect = (seat) => {
-  selectedSeat.value = seat
+  if (selectedSeats.value.length >= 10 && !selectedSeats.value.some(s => s.seatFullId === seat.seatFullId)) {
+    alert('En fazla 10 koltuk seçebilirsiniz!')
+    return
+  }
+  const seatIndex = selectedSeats.value.findIndex(s => s.seatFullId === seat.seatFullId)
+  
+  if (seatIndex === -1) {
+    selectedSeats.value.push(seat)
+  } else {
+    selectedSeats.value.splice(seatIndex, 1)
+  }
+}
+
+const handleReservationClick = () => {
+  if (selectedSeats.value.length === 0) {
+    alert('Lütfen en az bir koltuk seçiniz!')
+    return
+  }
   isDialogOpen.value = true
   errorMessage.value = ''
 }
 
 const handleDialogClose = () => {
   isDialogOpen.value = false
-  selectedSeat.value = null
   errorMessage.value = ''
 }
 
@@ -26,24 +42,28 @@ const handleReservation = async (userInfo) => {
     isLoading.value = true
     errorMessage.value = ''
 
+    const seatIds = selectedSeats.value.map(seat => {
+      return `${seat.rowLabel}-${seat.seatNumber}`
+    })
+
     const reservationData = {
       firstName: userInfo.firstName,
       lastName: userInfo.lastName,
       phoneNumber: userInfo.phoneNumber,
-      seatId: userInfo.seatId
+      seatIds: seatIds
     }
 
     const result = await reservationService.createReservation(reservationData)
-
+    
     if (result.success) {
       isDialogOpen.value = false
-      selectedSeat.value = null
-      alert('Rezervasyonunuz başarıyla oluşturuldu!')
+      selectedSeats.value = []
+      alert('Rezervasyonlarınız başarıyla oluşturuldu!')
     } else {
-      errorMessage.value = result.error
+      errorMessage.value = result.error || 'Bazı rezervasyonlar oluşturulamadı.'
     }
   } catch (error) {
-    errorMessage.value = 'Rezervasyon oluşturulurken bir hata oluştu.'
+    errorMessage.value = error.message || 'Rezervasyon oluşturulurken bir hata oluştu.'
     console.error('Rezervasyon hatası:', error)
   } finally {
     isLoading.value = false
@@ -59,12 +79,33 @@ const handleReservation = async (userInfo) => {
     <div class="stage-label">SAHNE</div>
     
     <main>
-      <SeatMap @seat-select="handleSeatSelect" />
+      <SeatMap @seat-select="handleSeatSelect" :selected-seats="selectedSeats" />
+      
+      <div class="selected-seats-container" v-if="selectedSeats.length > 0">
+        <div class="selected-seats-info">
+          <div class="selected-seats-header">
+            <span class="seat-icon">🎟️</span>
+            <h3>Seçilen Koltuklar</h3>
+          </div>
+          <div class="selected-seats-list">
+            <div v-for="seat in selectedSeats" :key="seat.seatFullId" class="seat-item">
+              <span class="seat-label">{{ seat.rowLabel }}-{{ seat.seatNumber }}</span>
+            </div>
+          </div>
+          <div class="total-price">
+            <span>Toplam Tutar:</span>
+            <span class="price">{{ selectedSeats.length * 100 }}₺</span>
+          </div>
+          <button class="reserve-button" @click="handleReservationClick">
+            <span class="button-icon">🎫</span>
+            <span>Rezervasyon Yap</span>
+          </button>
+        </div>
+      </div>
       
       <ReservationDialog
         v-if="isDialogOpen"
-        :seat-number="selectedSeat?.seatNumber"
-        :row-label="selectedSeat?.rowLabel"
+        :selected-seats="selectedSeats"
         :is-loading="isLoading"
         :error-message="errorMessage"
         @close="handleDialogClose"
@@ -78,6 +119,7 @@ const handleReservation = async (userInfo) => {
 .home {
   width: 100%;
   min-height: 100vh;
+  padding: 2rem;
 }
 
 header {
@@ -93,9 +135,9 @@ h1 {
 
 .stage-label {
   position: relative;
-  width: 80%;
+  width: 60%;
   min-width: 300px;
-  height: 55px;
+  height: 40px;
   margin: 0 auto 3rem;
   background: linear-gradient(90deg, #2c5282, #3182ce);
   border-radius: 8px 8px 0 0;
@@ -162,9 +204,123 @@ main {
   .stage-label {
     width: 90%;
     min-width: 200px;
-    height: 55px;
+    height: 30px;
     font-size: 0.9rem;
     margin-bottom: 1.5rem;
+  }
+}
+
+.selected-seats-container {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  transform: none;
+  width: 300px;
+  max-width: 100%;
+  z-index: 100;
+}
+
+.selected-seats-info {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.selected-seats-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.seat-icon {
+  font-size: 1.5rem;
+}
+
+.selected-seats-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.selected-seats-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.seat-item {
+  background-color: #edf2f7;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.total-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-top: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.price {
+  font-size: 1.2rem;
+  color: #3182ce;
+  font-weight: 600;
+}
+
+.reserve-button {
+  width: 100%;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background-color: #3182ce;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.button-icon {
+  font-size: 1.2rem;
+}
+
+.reserve-button:hover {
+  background-color: #2c5282;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.2);
+}
+
+@media (max-width: 768px) {
+  .selected-seats-container {
+    top: 1rem;
+    right: 1rem;
+    width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .selected-seats-container {
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 250px;
   }
 }
 </style> 

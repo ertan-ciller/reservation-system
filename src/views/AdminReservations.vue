@@ -81,12 +81,23 @@ const filteredReservations = computed(() => {
   if (!searchQuery.value) return reservations.value
 
   const query = searchQuery.value.toLowerCase()
-  return reservations.value.filter(res => 
-    res.firstName?.toLowerCase().includes(query) ||
-    res.lastName?.toLowerCase().includes(query) ||
-    res.phoneNumber?.includes(query) ||
-    res.seatFullId?.toLowerCase().includes(query)
-  )
+  const searchTerms = query.split(' ')
+
+  return reservations.value.filter(res => {
+    const fullName = `${res.firstName} ${res.lastName}`.toLowerCase()
+    
+    // Tam eşleşme kontrolü
+    if (fullName === query) return true
+    
+    // Her bir kelime için ayrı kontrol
+    const matchesAllTerms = searchTerms.every(term => 
+      fullName.includes(term) ||
+      res.phoneNumber?.includes(term) ||
+      res.seatFullId?.toLowerCase().includes(term)
+    )
+    
+    return matchesAllTerms
+  })
 })
 </script>
 
@@ -149,20 +160,25 @@ const filteredReservations = computed(() => {
                 </span>
               </td>
               <td class="actions">
-                <button
-                  v-if="reservation.status === 'pending'"
-                  @click="handleApprove(reservation.id)"
-                  class="approve"
-                >
-                  ✓ Onayla
-                </button>
-                <button
-                  v-if="reservation.status === 'pending'"
-                  @click="handleReject(reservation.id)"
-                  class="reject"
-                >
-                  ✕ Reddet
-                </button>
+                <div class="action-buttons" v-if="reservation.status === 'pending'">
+                  <button
+                    @click="handleApprove(reservation.id)"
+                    class="approve"
+                  >
+                    ✓ Onayla
+                  </button>
+                  <button
+                    @click="handleReject(reservation.id)"
+                    class="reject"
+                  >
+                    ✕ Reddet
+                  </button>
+                </div>
+                <div class="action-buttons" v-else>
+                  <div class="placeholder-buttons">
+                    <span class="approved-text">İşlem Tamamlandı</span>
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -262,12 +278,40 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   color: #2c3e50;
+  table-layout: fixed;
 }
 
 th, td {
   padding: 1.25rem 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+th:nth-child(1) {
+  width: 15%;
+}
+
+th:nth-child(2) {
+  width: 20%;
+}
+
+th:nth-child(3) {
+  width: 15%;
+}
+
+th:nth-child(4) {
+  width: 15%;
+}
+
+th:nth-child(5) {
+  width: 15%;
+}
+
+th:nth-child(6) {
+  width: 20%;
 }
 
 th {
@@ -312,18 +356,33 @@ tr:last-child td {
 }
 
 .actions {
-  display: flex;
-  gap: 0.75rem;
+  width: 100%;
+  min-height: 38px;
 }
 
-.actions button {
-  padding: 0.5rem 1rem;
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  min-height: 38px;
+  width: 100%;
+  padding: 0 0.5rem;
+}
+
+.approve, .reject {
+  flex: 1;
+  padding: 0.6rem 1rem;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: calc(50% - 0.5rem);
+  white-space: nowrap;
 }
 
 .approve {
@@ -334,6 +393,7 @@ tr:last-child td {
 .approve:hover {
   background: #16a34a;
   transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
 }
 
 .reject {
@@ -344,6 +404,21 @@ tr:last-child td {
 .reject:hover {
   background: #dc2626;
   transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.placeholder-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 38px;
+}
+
+.approved-text {
+  color: #166534;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .loading, .error, .no-results {
@@ -413,15 +488,16 @@ tr:last-child td {
     padding: 0.75rem;
   }
 
-  .actions {
+  .action-buttons {
     flex-direction: column;
     gap: 0.5rem;
+    padding: 0;
   }
 
-  .actions button {
+  .approve, .reject {
+    max-width: 100%;
     width: 100%;
     padding: 0.5rem;
-    font-size: 0.8rem;
   }
 
   .status {

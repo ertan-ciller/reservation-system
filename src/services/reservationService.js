@@ -7,118 +7,103 @@ let isProcessing = false;
 export const reservationService = {
   // Yeni rezervasyon oluşturma
   async createReservation(reservationData) {
-    let seatFullId = null;
-    
     try {
       // Veri kontrolü
-      if (!reservationData || !reservationData.seatId || !reservationData.phoneNumber) {
+      if (!reservationData || !reservationData.seatIds || !reservationData.phoneNumber) {
         throw new Error('Geçersiz rezervasyon verisi');
       }
 
       // Telefon numarasını formatla (başındaki 0'ı kaldır)
       const formattedPhone = reservationData.phoneNumber.replace(/^0+/, '');
-      seatFullId = `${reservationData.seatId.row}-${reservationData.seatId.numericId}`;
-
-      // Transaction başlat
-      const result = await runTransaction(db, async (transaction) => {
-        // Koltuk kilidini kontrol et
-        const seatLockRef = doc(db, 'seatLocks', seatFullId);
-        const seatLockDoc = await transaction.get(seatLockRef);
-
-        // Kilit kontrolü
-        if (seatLockDoc.exists()) {
-          const lockData = seatLockDoc.data();
-          const now = new Date();
-          if (lockData.lockedUntil && lockData.lockedUntil.toDate() > now && lockData.lockedBy !== formattedPhone) {
-            throw new Error('Bu koltuk şu anda başka bir kullanıcı tarafından işlem yapılıyor. Lütfen biraz bekleyin.');
+      
+      // Batch işlemi başlat
+      const batch = writeBatch(db);
+      const results = [];
+      
+      // Kullanıcının mevcut rezervasyon sayısını kontrol et
+      const userReservationsQuery = query(
+        collection(db, 'reservations'),
+        where('phoneNumber', '==', formattedPhone),
+        where('status', 'in', ['pending', 'approved'])
+      );
+      
+      const userReservationsSnapshot = await getDocs(userReservationsQuery);
+      const currentReservationCount = userReservationsSnapshot.size;
+      
+      // Kullanıcının toplam rezervasyon sayısını kontrol et
+      if (currentReservationCount + reservationData.seatIds.length > 10) {
+        throw new Error('Bir kullanıcı en fazla 10 koltuk rezerve edebilir.');
+      }
+      
+      // Her koltuk ID'sini ayrı ayrı işle
+      for (const seatFullId of reservationData.seatIds) {
+        try {
+          // Koltuk bilgilerini ayrıştır - örnek format: 'A-12'
+          const seatParts = seatFullId.split('-');
+          if (seatParts.length !== 2) {
+            throw new Error(`Geçersiz koltuk formatı: ${seatFullId}`);
           }
+          
+          const seatRow = seatParts[0];
+          const seatNumber = parseInt(seatParts[1], 10);
+          
+          // Koltuk müsaitliğini kontrol et
+          const reservedSeatsQuery = query(
+            collection(db, 'reservations'),
+            where('seatFullId', '==', seatFullId),
+            where('status', 'in', ['pending', 'approved'])
+          );
+          
+          const reservedSeatsSnapshot = await getDocs(reservedSeatsQuery);
+          
+          if (!reservedSeatsSnapshot.empty) {
+            throw new Error(`Koltuk ${seatFullId} başkası tarafından rezerve edilmiş.`);
+          }
+          
+          // 3 saatlik süre için son kullanma tarihi
+          const expirationTime = new Date();
+          expirationTime.setHours(expirationTime.getHours() + 3);
+          
+          // Rezervasyon verilerini hazırla
+          const reservation = {
+            firstName: reservationData.firstName,
+            lastName: reservationData.lastName,
+            phoneNumber: formattedPhone,
+            seatRow: seatRow,
+            seatNumber: seatNumber,
+            seatFullId: seatFullId,
+            status: 'pending',
+            createdAt: Timestamp.now(),
+            expirationTime: Timestamp.fromDate(expirationTime)
+          };
+          
+          // Yeni bir döküman referansı oluştur
+          const newReservationRef = doc(collection(db, 'reservations'));
+          
+          // Batch'e ekle
+          batch.set(newReservationRef, reservation);
+          
+          results.push({
+            id: newReservationRef.id,
+            seatFullId: seatFullId
+          });
+        } catch (error) {
+          console.error(`Koltuk ${seatFullId} için hata:`, error);
+          throw error;
         }
-
-        // Aktif rezervasyonları kontrol et
-        const reservationsRef = collection(db, 'reservations');
-        const activeReservationsQuery = query(
-          reservationsRef,
-          where('status', 'in', ['pending', 'approved'])
-        );
-        
-        const reservationsSnapshot = await getDocs(activeReservationsQuery);
-        const reservations = reservationsSnapshot.docs.map(doc => doc.data());
-
-        // Koltuk müsaitliğini kontrol et
-        const isSeatTaken = reservations.some(res => res.seatFullId === seatFullId);
-        if (isSeatTaken) {
-          throw new Error('Seçilen koltuk başkası tarafından rezerve edilmiş.');
-        }
-
-        // Kullanıcının rezervasyon sayısını kontrol et
-        const userReservationCount = reservations.filter(res => res.phoneNumber === formattedPhone).length;
-        if (userReservationCount >= 5) {
-          throw new Error('Bir kullanıcı en fazla 5 koltuk rezerve edebilir.');
-        }
-
-        // Yeni kilit oluştur (30 saniyelik)
-        const lockUntil = new Date();
-        lockUntil.setSeconds(lockUntil.getSeconds() + 30);
-        
-        // Kilidi transaction içinde oluştur
-        transaction.set(seatLockRef, {
-          lockedBy: formattedPhone,
-          lockedUntil: Timestamp.fromDate(lockUntil),
-          createdAt: Timestamp.now()
-        });
-
-        // 3 saatlik süre için son kullanma tarihi
-        const expirationTime = new Date();
-        expirationTime.setHours(expirationTime.getHours() + 3);
-
-        // Rezervasyon verilerini hazırla
-        const reservation = {
-          firstName: reservationData.firstName,
-          lastName: reservationData.lastName,
-          phoneNumber: formattedPhone,
-          seatId: reservationData.seatId.id,
-          seatRow: reservationData.seatId.row,
-          seatNumber: reservationData.seatId.numericId,
-          seatFullId,
-          status: 'pending',
-          createdAt: Timestamp.now(),
-          expirationTime: Timestamp.fromDate(expirationTime)
-        };
-
-        // Yeni bir döküman referansı oluştur
-        const newReservationRef = doc(collection(db, 'reservations'));
-        
-        // Rezervasyonu transaction içinde kaydet
-        transaction.set(newReservationRef, reservation);
-
-        return {
-          docId: newReservationRef.id,
-          reservation
-        };
-      });
-
+      }
+      
+      // Batch işlemini commit et
+      await batch.commit();
+      
       // Süresi dolmuş rezervasyonları arka planda temizle
       this.cleanExpiredReservations().catch(console.error);
-
-      // Kilidi kaldır (transaction dışında)
-      const seatLockRef = doc(db, 'seatLocks', seatFullId);
-      await deleteDoc(seatLockRef);
-
+      
       return { 
         success: true,
-        data: {
-          id: result.docId,
-          ...result.reservation
-        }
+        data: results
       };
-
     } catch (error) {
-      // Hata durumunda kilidi kaldırmaya çalış
-      if (seatFullId) {
-        const seatLockRef = doc(db, 'seatLocks', seatFullId);
-        await deleteDoc(seatLockRef).catch(console.error);
-      }
-
       console.error('Rezervasyon hatası:', error);
       return { 
         success: false, 

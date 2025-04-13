@@ -6,6 +6,13 @@ import { db } from '../services/firebase'
 const emit = defineEmits(['seat-select'])
 const reservedSeats = ref(new Map())
 
+const props = defineProps({
+  selectedSeats: {
+    type: Array,
+    default: () => []
+  }
+})
+
 // Firestore'dan rezervasyonları dinle
 let unsubscribe = null
 
@@ -1043,6 +1050,7 @@ const handleSeatClick = (seat) => {
   if (reservedSeats.value.has(seatIdentifier)) {
     return // Rezerve edilmiş koltuklar seçilemez
   }
+  
   emit('seat-select', {
     id: seat.id,                    // Koltuk ID'si
     rowLabel: seat.row,             // Sıra harfi (örn: M)
@@ -1082,7 +1090,8 @@ const getSeatStatus = (row, seatNumber) => {
               :class="{
                 'reserved': isSeatReserved(seat.row, seat.id),
                 'pending': getSeatStatus(seat.row, seat.id) === 'pending',
-                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved',
+                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
               }"
               @click="handleSeatClick(seat)"
             >
@@ -1100,7 +1109,8 @@ const getSeatStatus = (row, seatNumber) => {
               :class="{
                 'reserved': isSeatReserved(seat.row, seat.id),
                 'pending': getSeatStatus(seat.row, seat.id) === 'pending',
-                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved',
+                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
               }"
               @click="handleSeatClick(seat)"
             >
@@ -1121,7 +1131,8 @@ const getSeatStatus = (row, seatNumber) => {
               :class="{
                 'reserved': isSeatReserved(seat.row, seat.id),
                 'pending': getSeatStatus(seat.row, seat.id) === 'pending',
-                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved',
+                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
               }"
               @click="handleSeatClick(seat)"
             >
@@ -1139,7 +1150,8 @@ const getSeatStatus = (row, seatNumber) => {
               :class="{
                 'reserved': isSeatReserved(seat.row, seat.id),
                 'pending': getSeatStatus(seat.row, seat.id) === 'pending',
-                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved',
+                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
               }"
               @click="handleSeatClick(seat)"
             >
@@ -1160,7 +1172,8 @@ const getSeatStatus = (row, seatNumber) => {
               :class="{
                 'reserved': isSeatReserved(seat.row, seat.id),
                 'pending': getSeatStatus(seat.row, seat.id) === 'pending',
-                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved',
+                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
               }"
               @click="handleSeatClick(seat)"
             >
@@ -1178,7 +1191,8 @@ const getSeatStatus = (row, seatNumber) => {
               :class="{
                 'reserved': isSeatReserved(seat.row, seat.id),
                 'pending': getSeatStatus(seat.row, seat.id) === 'pending',
-                'approved': getSeatStatus(seat.row, seat.id) === 'approved'
+                'approved': getSeatStatus(seat.row, seat.id) === 'approved',
+                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
               }"
               @click="handleSeatClick(seat)"
             >
@@ -1323,6 +1337,16 @@ const getSeatStatus = (row, seatNumber) => {
 
 .seat.pending .seat-number,
 .seat.approved .seat-number {
+  color: white;
+}
+
+.seat.selected {
+  background-color: #3182ce;
+  border-color: #2c5282;
+  color: white;
+}
+
+.seat.selected .seat-number {
   color: white;
 }
 
