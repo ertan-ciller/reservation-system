@@ -13,3 +13,4 @@ Yapılacaklar ve Yapılması düşünülenler;
 5- Soru işareti olarak => iki farklı grup sırasıyla 4 koltuk almak istiyor. Oldu da birisi birinden birisi birinden aldı koltukları, Dolayısı ile seyirciler yan yana oturamadı bu durum bizlik bir durum mu ? itiraz edebilirler mi ? 
 6- Birden fazla koltuk seçimi yapılmalı mı? yoksa şuan olduğu gibi tek tek mi seçilmeli koltuklar.
 
+7- U62 yi kontrol et çift koltuğu rezerve ediyor.

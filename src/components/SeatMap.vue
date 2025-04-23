@@ -1207,16 +1207,17 @@ const getSeatStatus = (row, seatNumber) => {
 
 <style scoped>
 .seat-map {
-  width: 100%;
-  max-width: 100%;
-  margin: 50px;
-  padding: 2rem;
-  transform: scale(0.65);
+  /*width: max-content;*/
+  min-width: 100%;
+  margin: 10px auto;
+  padding: 0.5rem;
+  transform: scale(0.7);
   transform-origin: top center;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: visible;
 }
 
 .stage {
@@ -1226,9 +1227,9 @@ const getSeatStatus = (row, seatNumber) => {
 .sections {
   display: flex;
   justify-content: center;
-  gap: clamp(0.5rem, 1vw, 1.5rem);
+  gap: 1rem;
   perspective: 1000px;
-  width: 100%;
+  width: max-content;
   margin: 0 auto;
   padding: 0 1rem;
   position: relative;
@@ -1238,43 +1239,30 @@ const getSeatStatus = (row, seatNumber) => {
 .section-group {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
+  gap: 2rem;
   position: relative;
 }
 
 .section-group.left {
-  transform: translateX(3.5rem);
-  margin-top: 2rem;
+  transform: translateX(2rem);
+  margin-top: 1rem;
 }
 
 .section-group.right {
-  transform: translateX(-3.5rem);
-  margin-top: 2rem;
+  transform: translateX(-2rem);
+  margin-top: 1rem;
 }
 
-.section-group.right .section.back {
-  margin-top: 0rem;
-  transform-origin: top center;
-}
-
-.section-group.left .section.back {
-  margin-top: 0rem;
-  transform-origin: top center;
-}
-
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.1rem, 0.2vw, 0.25rem);
-  transform-style: preserve-3d;
-  transition: transform 0.3s ease;
+.section-group.center {
+  margin-top: 3rem !important;
 }
 
 .row {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: clamp(0.15rem, 0.3vw, 0.4rem);
+  gap: 0.2rem;
+  margin-bottom: 0.1rem;
 }
 
 .row-number {
@@ -1287,32 +1275,31 @@ const getSeatStatus = (row, seatNumber) => {
 }
 
 .seat {
-  width: clamp(18px, 1.8vw, 24px);
-  height: clamp(18px, 1.8vw, 24px);
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
   cursor: pointer;
   background: white;
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .seat-number {
-  font-size: clamp(0.45rem, 0.9vw, 0.65rem);
+  font-size: 0.6rem;
   font-weight: 500;
   color: #444;
-  transition: all 0.2s ease;
 }
 
 .seat:hover:not(.reserved) {
   transform: translateY(-2px);
   border-color: #3498db;
-  background: #f8f9fa;
+  background: #ebf8ff;
   box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
 }
 
@@ -1341,59 +1328,66 @@ const getSeatStatus = (row, seatNumber) => {
 }
 
 .seat.selected {
-  background-color: #3182ce;
-  border-color: #2c5282;
-  color: white;
+  background-color: #3182ce !important;
+  border-color: #2c5282 !important;
+  color: white !important;
+  box-shadow: 0 2px 6px rgba(49, 130, 206, 0.3);
 }
 
 .seat.selected .seat-number {
-  color: white;
+  color: white !important;
 }
 
 /* Tablet ve mobil için responsive tasarım */
 @media (max-width: 1024px) {
   .seat-map {
-    transform: scale(2);
-    width: 100%;
-    height: auto;
-    overflow-x: auto;
-    padding: 0;
+    transform: scale(0.65);
+    margin: 5px auto;
   }
 
   .sections {
-    width: max-content;
-    padding: 1rem;
-  }
-
-  .section-group.left,
-  .section-group.right {
-    transform: none;
-  }
-
-  .seat {
-    width: 20px;
-    height: 20px;
-  }
-
-  .seat-number {
-    font-size: 0.5rem;
+    gap: 0.5rem;
+    padding: 0.5rem;
   }
 }
 
 @media (max-width: 768px) {
   .seat-map {
-    transform: scale(0.8);
+    transform: scale(0.6);
+    margin: 0 auto;
+  }
+
+  .sections {
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+
+  .section-group.left {
+    transform: translateX(1rem);
+  }
+
+  .section-group.right {
+    transform: translateX(-1rem);
   }
 }
 
 @media (max-width: 480px) {
   .seat-map {
-    transform: scale(0.6);
+    transform: scale(0.5);
+    margin: 0 auto;
   }
 
-  .seat {
-    width: 18px;
-    height: 18px;
+  .sections {
+    gap: 0.15rem;
+    padding: 0.25rem;
+  }
+
+  .section-group.left {
+    transform: translateX(0.75rem);
+  }
+
+  .section-group.right {
+    transform: translateX(-0.75rem);
   }
 }
 </style> 

@@ -1,25 +1,49 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import SeatMap from '../components/SeatMap.vue'
 import ReservationDialog from '../components/ReservationDialog.vue'
 import { reservationService } from '../services/reservationService'
+import { addDoc, collection } from 'firebase/firestore'
+import { db } from '../services/firebase'
 
 const selectedSeats = ref([])
 const isDialogOpen = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const showSelectedSeats = ref(true)
+
+const totalPrice = computed(() => {
+  return selectedSeats.value.reduce((total, seat) => {
+    // Koltuk kategorisine göre fiyat belirleme
+    let price = 500 // Varsayılan fiyat (2. Kategori)
+    if (seat.category === '1') {
+      price = 600
+    } else if (seat.category === 'P') {
+      price = 700
+    }
+    return total + price
+  }, 0)
+})
 
 const handleSeatSelect = (seat) => {
   if (selectedSeats.value.length >= 10 && !selectedSeats.value.some(s => s.seatFullId === seat.seatFullId)) {
     alert('En fazla 10 koltuk seçebilirsiniz!')
     return
   }
-  const seatIndex = selectedSeats.value.findIndex(s => s.seatFullId === seat.seatFullId)
+  const existingIndex = selectedSeats.value.findIndex(s => s.seatFullId === seat.seatFullId)
   
-  if (seatIndex === -1) {
+  if (existingIndex === -1) {
     selectedSeats.value.push(seat)
+    showSelectedSeats.value = true
   } else {
-    selectedSeats.value.splice(seatIndex, 1)
+    selectedSeats.value.splice(existingIndex, 1)
+  }
+}
+
+const removeSeat = (seat) => {
+  const index = selectedSeats.value.findIndex(s => s.seatFullId === seat.seatFullId)
+  if (index !== -1) {
+    selectedSeats.value.splice(index, 1)
   }
 }
 
@@ -69,6 +93,15 @@ const handleReservation = async (userInfo) => {
     isLoading.value = false
   }
 }
+
+const closePrices = () => {
+  selectedSeats.value = []
+  showSelectedSeats.value = false
+}
+
+const toggleSelectedSeats = () => {
+  showSelectedSeats.value = !showSelectedSeats.value
+}
 </script>
 
 <template>
@@ -79,27 +112,57 @@ const handleReservation = async (userInfo) => {
     <div class="stage-label">SAHNE</div>
     
     <main>
-      <SeatMap @seat-select="handleSeatSelect" :selected-seats="selectedSeats" />
+      <div class="seat-map-container">
+        <SeatMap @seat-select="handleSeatSelect" :selected-seats="selectedSeats" />
+      </div>
       
-      <div class="selected-seats-container" v-if="selectedSeats.length > 0">
-        <div class="selected-seats-info">
-          <div class="selected-seats-header">
-            <span class="seat-icon">🎟️</span>
-            <h3>Seçilen Koltuklar</h3>
+      <div v-if="selectedSeats.length > 0" 
+           class="selected-seats-container"
+           :class="{ 'collapsed': !showSelectedSeats }">
+        <div class="ticket-prices">
+          <div class="prices-header">
+            <h3>BİLET FİYATLARI</h3>
+            <button class="toggle-button" @click="toggleSelectedSeats">
+              <span :class="{ 'rotated': !showSelectedSeats }">⌃</span>
+            </button>
           </div>
-          <div class="selected-seats-list">
-            <div v-for="seat in selectedSeats" :key="seat.seatFullId" class="seat-item">
-              <span class="seat-label">{{ seat.rowLabel }}-{{ seat.seatNumber }}</span>
+          <div class="price-list">
+            <div class="price-item">
+              <span>500,00 ₺</span>
+              <span class="category">2. Kategori</span>
+            </div>
+            <div class="price-item">
+              <span>600,00 ₺</span>
+              <span class="category">1. Kategori</span>
+            </div>
+            <div class="price-item">
+              <span>700,00 ₺</span>
+              <span class="category">Protokol</span>
             </div>
           </div>
-          <div class="total-price">
-            <span>Toplam Tutar:</span>
-            <span class="price">{{ selectedSeats.length * 100 }}₺</span>
+        </div>
+
+        <div v-show="showSelectedSeats" class="selected-seats-section">
+          <div class="selected-seats-header">
+            <h3>Seçtiğiniz Koltuklar ({{ selectedSeats.length }})</h3>
           </div>
-          <button class="reserve-button" @click="handleReservationClick">
-            <span class="button-icon">🎫</span>
-            <span>Rezervasyon Yap</span>
-          </button>
+          <div class="selected-seats-content">
+            <div class="selected-seats-list">
+              <div v-for="seat in selectedSeats" :key="seat.seatFullId" class="selected-seat-item">
+                {{ seat.rowLabel }}{{ seat.seatNumber }}
+                <button class="remove-seat" @click="removeSeat(seat)">×</button>
+              </div>
+            </div>
+            <div class="selected-seats-footer">
+              <div class="total-price">
+                Toplam Bilet Bedeli: {{ totalPrice.toLocaleString('tr-TR') }},00₺
+                <div class="price-note">Hizmet bedeli ve indirimler ödeme ekranında hesaplanacaktır.</div>
+              </div>
+              <button class="reservation-button" @click="handleReservationClick">
+                Şimdi Rezervasyon Yap
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -115,11 +178,13 @@ const handleReservation = async (userInfo) => {
   </div>
 </template>
 
-<style scoped>
+<style>
 .home {
   width: 100%;
   min-height: 100vh;
-  padding: 2rem;
+  padding: 1rem;
+  position: relative;
+  overflow-x: hidden;
 }
 
 header {
@@ -165,162 +230,240 @@ h1 {
 }
 
 main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding: 0;
-  overflow-x: hidden;
   position: relative;
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2rem;
+  transition: transform 0.3s ease, padding-bottom 0.3s ease;
+}
+
+:deep(.seat-map) {
+  width: fit-content;
+  margin: 20px auto;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: scale(0.9);
+  transform-origin: top center;
+}
+
+.seat-map-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding: 1rem;
+}
+
+.seat-map-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.seat-map-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.seat-map-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
 }
 
 @media (max-width: 768px) {
-  .home {
-    padding: 1rem;
-  }
-
-  h1 {
-    font-size: 2rem;
-  }
-
-  .stage-label {
-    width: 80%;
-    min-width: 250px;
-    height: 35px;
-    font-size: 1rem;
-    margin-bottom: 2rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .home {
+  .seat-map-container {
     padding: 0.5rem;
   }
 
-  h1 {
-    font-size: 1.5rem;
-  }
-
-  .stage-label {
-    width: 90%;
-    min-width: 200px;
-    height: 30px;
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
+  :deep(.seat-map) {
+    transform: scale(0.8);
+    margin: 10px auto;
   }
 }
 
 .selected-seats-container {
   position: fixed;
-  top: 2rem;
-  right: 2rem;
-  transform: none;
-  width: 300px;
-  max-width: 100%;
-  z-index: 100;
+  bottom: 0;
+  left: 16px;
+  right: 16px;
+  width: auto;
+  background: white;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transition: transform 0.3s ease;
 }
 
-.selected-seats-info {
-  background: #fff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+.selected-seats-container.collapsed {
+  transform: translateY(calc(100% - 120px));
 }
 
-.selected-seats-header {
+.prices-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 0;
+}
+
+.prices-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.toggle-button {
+  background: none;
+  border: none;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: #666;
+  font-size: 20px;
 }
 
-.seat-icon {
-  font-size: 1.5rem;
+.toggle-button span {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  transform: rotate(180deg);
 }
 
-.selected-seats-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #2d3748;
+.toggle-button span.rotated {
+  transform: rotate(0deg);
+}
+
+.price-list {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  gap: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.price-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.price-item span:first-child {
+  font-size: 14px;
   font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.category {
+  font-size: 12px;
+  color: #666;
+}
+
+.selected-seats-section {
+  transition: max-height 0.3s ease;
 }
 
 .selected-seats-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 8px;
+  padding: 12px 16px;
 }
 
-.seat-item {
-  background-color: #edf2f7;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: #2d3748;
-  font-weight: 500;
-}
-
-.total-price {
+.selected-seat-item {
+  background: #F7B036;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem 0;
-  border-top: 1px solid #e2e8f0;
-  margin-bottom: 1rem;
-  color: #2d3748;
-  font-weight: 500;
+  gap: 8px;
 }
 
-.price {
-  font-size: 1.2rem;
-  color: #3182ce;
-  font-weight: 600;
-}
-
-.reserve-button {
-  width: 100%;
-  padding: 1rem;
+.remove-seat {
+  background: none;
+  border: none;
+  color: #333;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  background-color: #3182ce;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
+}
+
+.selected-seats-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #eee;
+}
+
+.total-price {
+  font-size: 14px;
   font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.price-note {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.reservation-button {
+  width: 100%;
+  padding: 14px;
+  background: #F7B036;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.button-icon {
-  font-size: 1.2rem;
-}
-
-.reserve-button:hover {
-  background-color: #2c5282;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.2);
-}
-
-@media (max-width: 768px) {
-  .selected-seats-container {
-    top: 1rem;
-    right: 1rem;
-    width: 280px;
-  }
 }
 
 @media (max-width: 480px) {
+  .home {
+    padding-bottom: 180px;
+  }
+
   .selected-seats-container {
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 250px;
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+
+  .price-list {
+    padding: 8px 16px;
+  }
+
+  .selected-seat-item {
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+}
+
+@media (min-width: 769px) {
+  .selected-seats-container {
+    width: 350px;
+    right: 1rem;
+    left: auto;
+    bottom: auto;
+    top: 1rem;
+    border-radius: 24px;
+  }
+
+  .selected-seats-container.collapsed {
+    transform: none;
   }
 }
 </style> 
