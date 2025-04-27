@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import SeatMap from '../components/SeatMap.vue'
 import ReservationDialog from '../components/ReservationDialog.vue'
 import { reservationService } from '../services/reservationService'
@@ -11,6 +11,7 @@ const isDialogOpen = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const showSelectedSeats = ref(true)
+const seatMapContainerRef = ref(null)
 
 const totalPrice = computed(() => {
   return selectedSeats.value.reduce((total, seat) => {
@@ -112,7 +113,7 @@ const toggleSelectedSeats = () => {
     <div class="stage-label">SAHNE</div>
     
     <main>
-      <div class="seat-map-container">
+      <div class="seat-map-container" ref="seatMapContainerRef">
         <SeatMap @seat-select="handleSeatSelect" :selected-seats="selectedSeats" />
       </div>
       
@@ -123,7 +124,9 @@ const toggleSelectedSeats = () => {
           <div class="prices-header">
             <h3>BİLET FİYATLARI</h3>
             <button class="toggle-button" @click="toggleSelectedSeats">
-              <span :class="{ 'rotated': !showSelectedSeats }">⌃</span>
+              <svg :class="{ 'rotated': !showSelectedSeats }" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="6,12 10,8 14,12" stroke="#333" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
             </button>
           </div>
           <div class="price-list">
@@ -238,48 +241,59 @@ main {
   transition: transform 0.3s ease, padding-bottom 0.3s ease;
 }
 
-:deep(.seat-map) {
-  width: fit-content;
-  margin: 20px auto;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transform: scale(0.9);
-  transform-origin: top center;
-}
-
 .seat-map-container {
   width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  padding: 1rem;
+  padding: 1rem 0;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.seat-map-container::-webkit-scrollbar {
-  height: 6px;
+:deep(.seat-map) {
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: fit-content;
+  min-width: unset;
+  max-width: unset;
+  transform: scale(0.9);
+  transform-origin: top center;
 }
 
-.seat-map-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.seat-map-container::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .seat-map-container {
-    padding: 0.5rem;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    justify-content: center;
+    padding: 0.5rem 0;
   }
-
   :deep(.seat-map) {
-    transform: scale(0.8);
-    margin: 10px auto;
+    margin: 0 auto;
+    transform: scale(0.7);
+  }
+}
+
+@media (max-width: 600px) {
+  .seat-map-container {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    justify-content: center;
+    padding: 0.25rem 0;
+  }
+  :deep(.seat-map) {
+    margin: 0 auto;
+    transform: scale(0.5);
   }
 }
 
@@ -329,13 +343,13 @@ main {
   font-size: 20px;
 }
 
-.toggle-button span {
+.toggle-button svg {
   display: inline-block;
   transition: transform 0.3s ease;
   transform: rotate(180deg);
 }
 
-.toggle-button span.rotated {
+.toggle-button svg.rotated {
   transform: rotate(0deg);
 }
 
@@ -344,7 +358,7 @@ main {
   justify-content: space-between;
   padding: 12px 16px;
   gap: 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 0px solid #eee;
 }
 
 .price-item {
@@ -464,6 +478,12 @@ main {
 
   .selected-seats-container.collapsed {
     transform: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  .seat-map-container {
+    padding-right: 0 !important;
   }
 }
 </style> 

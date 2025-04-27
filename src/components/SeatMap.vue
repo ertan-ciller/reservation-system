@@ -1239,7 +1239,7 @@ const getSeatStatus = (row, seatNumber) => {
 .section-group {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 4rem;
   position: relative;
 }
 
@@ -1275,67 +1275,77 @@ const getSeatStatus = (row, seatNumber) => {
 }
 
 .seat {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e0e0e0;
-  border-radius: 3px;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  background: white;
-  transition: all 0.2s ease;
+  background: linear-gradient(145deg, #f5f7fa 0%, #c3cfe2 100%);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  overflow: visible;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10), 0 1.5px 3px rgba(44, 62, 80, 0.08);
 }
 
 .seat-number {
-  font-size: 0.6rem;
-  font-weight: 500;
-  color: #444;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #34495e;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
 }
 
 .seat:hover:not(.reserved) {
-  transform: translateY(-2px);
-  border-color: #3498db;
-  background: #ebf8ff;
-  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+  transform: translateY(-4px) scale(1.08);
+  border: none;
+  background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
+  box-shadow: 0 6px 16px rgba(52, 152, 219, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);
 }
 
 .seat:hover:not(.reserved) .seat-number {
-  color: #3498db;
+  color: #1976d2;
+  text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
 }
 
 .seat.reserved {
   cursor: not-allowed;
+  background: repeating-linear-gradient(135deg, #b0bec5 0 6px, #90a4ae 6px 12px);
+  color: #fff;
   box-shadow: none;
+  opacity: 0.7;
 }
 
 .seat.pending {
-  background: #ff5252;
-  border-color: #ff1744;
+  background: linear-gradient(145deg, #ffbaba 0%, #ff5252 100%);
+  border: none;
+  color: #fff;
 }
 
 .seat.approved {
-  background: #4caf50;
-  border-color: #388e3c;
+  background: linear-gradient(145deg, #b2f7c1 0%, #4caf50 100%);
+  border: none;
+  color: #fff;
 }
 
 .seat.pending .seat-number,
 .seat.approved .seat-number {
-  color: white;
+  color: #fff;
+  text-shadow: 0 1px 2px #388e3c, 0 0.5px 0.5px #fff;
 }
 
 .seat.selected {
-  background-color: #3182ce !important;
-  border-color: #2c5282 !important;
-  color: white !important;
-  box-shadow: 0 2px 6px rgba(49, 130, 206, 0.3);
+  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25);
 }
 
 .seat.selected .seat-number {
-  color: white !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
 }
 
 /* Tablet ve mobil için responsive tasarım */
