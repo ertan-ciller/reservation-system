@@ -99,6 +99,49 @@ const filteredReservations = computed(() => {
     return matchesAllTerms
   })
 })
+
+// Tarih formatla fonksiyonunu güncelle
+const formatDate = (date, type = 'full') => {
+  if (!date) return ''
+  
+  const options = type === 'full' ? {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  } : {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }
+  
+  return new Date(date).toLocaleString('tr-TR', options)
+}
+
+// Durum etiketi rengi
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'approved':
+      return 'approved'
+    case 'rejected':
+      return 'rejected'
+    default:
+      return 'pending'
+  }
+}
+
+// Durum metni
+const getStatusText = (status) => {
+  switch (status) {
+    case 'approved':
+      return 'ONAYLANDI'
+    case 'rejected':
+      return 'REDDEDİLDİ'
+    default:
+      return 'Bekliyor'
+  }
+}
 </script>
 
 <template>
@@ -143,41 +186,49 @@ const filteredReservations = computed(() => {
               <th>Tarih</th>
               <th>Ad Soyad</th>
               <th>Telefon</th>
-              <th>Koltuk</th>
+              <th>Koltuklar</th>
+              <th>Gösterim Tarihi</th>
               <th>Durum</th>
               <th>İşlemler</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="reservation in filteredReservations" :key="reservation.id">
-              <td>{{ new Date(reservation.createdAt).toLocaleString('tr-TR') }}</td>
+              <td>{{ formatDate(reservation.createdAt, 'full') }}</td>
               <td class="name-cell">{{ reservation.firstName }} {{ reservation.lastName }}</td>
               <td>{{ reservation.phoneNumber }}</td>
-              <td class="seat-cell">{{ reservation.seatFullId }}</td>
+              <td class="seat-cell">
+                <div class="seat-list">
+                  <span v-for="(seatId, index) in reservation.seatIds" :key="index" class="seat-tag">
+                    {{ seatId }}
+                  </span>
+                </div>
+              </td>
+              <td class="show-date">{{ formatDate(reservation.showDate, 'show') }}</td>
               <td>
-                <span :class="['status', reservation.status]">
-                  {{ reservation.status === 'pending' ? 'Bekliyor' : 'Onaylandı' }}
+                <span :class="['status', getStatusClass(reservation.status)]">
+                  {{ getStatusText(reservation.status) }}
                 </span>
               </td>
               <td class="actions">
                 <div class="action-buttons" v-if="reservation.status === 'pending'">
                   <button
                     @click="handleApprove(reservation.id)"
-                    class="approve"
+                    class="action-btn approve"
                   >
-                    ✓ Onayla
+                    Onayla
                   </button>
                   <button
                     @click="handleReject(reservation.id)"
-                    class="reject"
+                    class="action-btn reject"
                   >
-                    ✕ Reddet
+                    Reddet
                   </button>
                 </div>
-                <div class="action-buttons" v-else>
-                  <div class="placeholder-buttons">
-                    <span class="approved-text">İşlem Tamamlandı</span>
-                  </div>
+                <div v-else>
+                  <span class="approved-text">
+                    {{ reservation.status === 'approved' ? 'İşlem Tamamlandı' : 'Rezervasyon Reddedildi' }}
+                  </span>
                 </div>
               </td>
             </tr>
@@ -295,15 +346,15 @@ th:nth-child(1) {
 }
 
 th:nth-child(2) {
-  width: 20%;
+  width: 15%;
 }
 
 th:nth-child(3) {
-  width: 15%;
+  width: 12%;
 }
 
 th:nth-child(4) {
-  width: 15%;
+  width: 18%;
 }
 
 th:nth-child(5) {
@@ -311,7 +362,11 @@ th:nth-child(5) {
 }
 
 th:nth-child(6) {
-  width: 20%;
+  width: 10%;
+}
+
+th:nth-child(7) {
+  width: 15%;
 }
 
 th {
@@ -336,23 +391,38 @@ tr:last-child td {
   font-size: 0.95rem;
 }
 
-.status {
-  display: inline-block;
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
+.show-date {
   font-weight: 500;
-  text-transform: uppercase;
+  color: #1e40af;
 }
 
-.status.pending {
-  background: #fef3c7;
-  color: #92400e;
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+  min-width: fit-content;
+  text-align: center;
+}
+
+.status.rejected {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .status.approved {
   background: #dcfce7;
   color: #166534;
+}
+
+.status.pending {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .actions {
@@ -362,63 +432,44 @@ tr:last-child td {
 
 .action-buttons {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   min-height: 38px;
   width: 100%;
-  padding: 0 0.5rem;
 }
 
-.approve, .reject {
-  flex: 1;
-  padding: 0.6rem 1rem;
+.action-btn {
+  padding: 6px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  max-width: calc(50% - 0.5rem);
-  white-space: nowrap;
+  color: #fff;
 }
 
 .approve {
-  background: #22c55e;
-  color: white;
+  background-color: #22c55e;
 }
 
 .approve:hover {
-  background: #16a34a;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
+  background-color: #16a34a;
 }
 
 .reject {
-  background: #ef4444;
-  color: white;
+  background-color: #ef4444;
 }
 
 .reject:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-}
-
-.placeholder-buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 38px;
+  background-color: #dc2626;
 }
 
 .approved-text {
+  display: inline-block;
   color: #166534;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
+  padding: 4px 8px;
 }
 
 .loading, .error, .no-results {
@@ -489,20 +540,29 @@ tr:last-child td {
   }
 
   .action-buttons {
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.5rem;
-    padding: 0;
   }
 
-  .approve, .reject {
-    max-width: 100%;
-    width: 100%;
-    padding: 0.5rem;
+  .action-btn {
+    flex: 1;
+    padding: 6px 12px;
+    font-size: 0.875rem;
   }
 
   .status {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.75rem;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+  }
+
+  .seat-list {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .seat-tag {
+    display: inline-block;
+    margin: 1px 0;
   }
 }
 
@@ -550,5 +610,20 @@ tr:last-child td {
   .actions {
     justify-content: flex-end;
   }
+}
+
+.seat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.seat-tag {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 </style> 

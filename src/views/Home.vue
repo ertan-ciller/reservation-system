@@ -5,7 +5,9 @@ import ReservationDialog from '../components/ReservationDialog.vue'
 import { reservationService } from '../services/reservationService'
 import { addDoc, collection } from 'firebase/firestore'
 import { db } from '../services/firebase'
+import DateSelector from '../components/DateSelector.vue'
 
+const selectedDate = ref('')
 const selectedSeats = ref([])
 const isDialogOpen = ref(false)
 const isLoading = ref(false)
@@ -75,7 +77,9 @@ const handleReservation = async (userInfo) => {
       firstName: userInfo.firstName,
       lastName: userInfo.lastName,
       phoneNumber: userInfo.phoneNumber,
-      seatIds: seatIds
+      seatIds: seatIds,
+      showDate: selectedDate.value,
+      status: 'pending'
     }
 
     const result = await reservationService.createReservation(reservationData)
@@ -83,6 +87,7 @@ const handleReservation = async (userInfo) => {
     if (result.success) {
       isDialogOpen.value = false
       selectedSeats.value = []
+      await loadReservedSeats()
       alert('Rezervasyonlarınız başarıyla oluşturuldu!')
     } else {
       errorMessage.value = result.error || 'Bazı rezervasyonlar oluşturulamadı.'
@@ -110,11 +115,22 @@ const toggleSelectedSeats = () => {
     <header>
       <h1></h1>
     </header>
-    <div class="stage-label">SAHNE</div>
+    
+    <DateSelector v-model:selectedDate="selectedDate" />
+    
+    <div v-if="selectedDate" class="stage-label">SAHNE</div>
     
     <main>
-      <div class="seat-map-container" ref="seatMapContainerRef">
-        <SeatMap @seat-select="handleSeatSelect" :selected-seats="selectedSeats" />
+      <div v-if="selectedDate" class="seat-map-container" ref="seatMapContainerRef">
+        <SeatMap 
+          @seat-select="handleSeatSelect" 
+          :selected-seats="selectedSeats"
+          :show-date="selectedDate" 
+        />
+      </div>
+      
+      <div v-else class="select-date-message">
+        Lütfen gösteri tarihini seçiniz
       </div>
       
       <div v-if="selectedSeats.length > 0" 
@@ -174,6 +190,7 @@ const toggleSelectedSeats = () => {
         :selected-seats="selectedSeats"
         :is-loading="isLoading"
         :error-message="errorMessage"
+        :show-date="selectedDate"
         @close="handleDialogClose"
         @submit="handleReservation"
       />
@@ -185,7 +202,7 @@ const toggleSelectedSeats = () => {
 .home {
   width: 100%;
   min-height: 100vh;
-  padding: 1rem;
+  /*padding: 1rem;*/
   position: relative;
   overflow-x: hidden;
 }
@@ -485,5 +502,12 @@ main {
   .seat-map-container {
     padding-right: 0 !important;
   }
+}
+
+.select-date-message {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  color: #666;
 }
 </style> 

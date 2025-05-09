@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, getDocs, doc, updateDoc, deleteDoc, Timestamp, getDoc, orderBy, writeBatch, runTransaction, setDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, updateDoc, deleteDoc, Timestamp, getDoc, orderBy, writeBatch, runTransaction, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 // İşlem kilidi için değişken
@@ -8,107 +8,25 @@ export const reservationService = {
   // Yeni rezervasyon oluşturma
   async createReservation(reservationData) {
     try {
-      // Veri kontrolü
-      if (!reservationData || !reservationData.seatIds || !reservationData.phoneNumber) {
-        throw new Error('Geçersiz rezervasyon verisi');
-      }
-
-      // Telefon numarasını formatla (başındaki 0'ı kaldır)
-      const formattedPhone = reservationData.phoneNumber.replace(/^0+/, '');
-      
-      // Batch işlemi başlat
-      const batch = writeBatch(db);
-      const results = [];
-      
-      // Kullanıcının mevcut rezervasyon sayısını kontrol et
-      const userReservationsQuery = query(
-        collection(db, 'reservations'),
-        where('phoneNumber', '==', formattedPhone),
-        where('status', 'in', ['pending', 'approved'])
-      );
-      
-      const userReservationsSnapshot = await getDocs(userReservationsQuery);
-      const currentReservationCount = userReservationsSnapshot.size;
-      
-      // Kullanıcının toplam rezervasyon sayısını kontrol et
-      if (currentReservationCount + reservationData.seatIds.length > 10) {
-        throw new Error('Bir kullanıcı en fazla 10 koltuk rezerve edebilir.');
-      }
-      
-      // Her koltuk ID'sini ayrı ayrı işle
-      for (const seatFullId of reservationData.seatIds) {
-        try {
-          // Koltuk bilgilerini ayrıştır - örnek format: 'A-12'
-          const seatParts = seatFullId.split('-');
-          if (seatParts.length !== 2) {
-            throw new Error(`Geçersiz koltuk formatı: ${seatFullId}`);
-          }
-          
-          const seatRow = seatParts[0];
-          const seatNumber = parseInt(seatParts[1], 10);
-          
-          // Koltuk müsaitliğini kontrol et
-          const reservedSeatsQuery = query(
-            collection(db, 'reservations'),
-            where('seatFullId', '==', seatFullId),
-            where('status', 'in', ['pending', 'approved'])
-          );
-          
-          const reservedSeatsSnapshot = await getDocs(reservedSeatsQuery);
-          
-          if (!reservedSeatsSnapshot.empty) {
-            throw new Error(`Koltuk ${seatFullId} başkası tarafından rezerve edilmiş.`);
-          }
-          
-          // 3 saatlik süre için son kullanma tarihi
-          const expirationTime = new Date();
-          expirationTime.setHours(expirationTime.getHours() + 3);
-          
-          // Rezervasyon verilerini hazırla
-          const reservation = {
-            firstName: reservationData.firstName,
-            lastName: reservationData.lastName,
-            phoneNumber: formattedPhone,
-            seatRow: seatRow,
-            seatNumber: seatNumber,
-            seatFullId: seatFullId,
-            status: 'pending',
-            createdAt: Timestamp.now(),
-            expirationTime: Timestamp.fromDate(expirationTime)
-          };
-          
-          // Yeni bir döküman referansı oluştur
-          const newReservationRef = doc(collection(db, 'reservations'));
-          
-          // Batch'e ekle
-          batch.set(newReservationRef, reservation);
-          
-          results.push({
-            id: newReservationRef.id,
-            seatFullId: seatFullId
-          });
-        } catch (error) {
-          console.error(`Koltuk ${seatFullId} için hata:`, error);
-          throw error;
-        }
-      }
-      
-      // Batch işlemini commit et
-      await batch.commit();
-      
-      // Süresi dolmuş rezervasyonları arka planda temizle
-      this.cleanExpiredReservations().catch(console.error);
-      
-      return { 
-        success: true,
-        data: results
+      const reservationRef = collection(db, 'reservations');
+      const newReservation = {
+        ...reservationData,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        expirationTime: serverTimestamp()
       };
+      
+      const docRef = await addDoc(reservationRef, newReservation);
+      
+      // Rezervasyon oluşturulduktan sonra hemen güncelle
+      await updateDoc(docRef, {
+        id: docRef.id
+      });
+      
+      return { success: true, id: docRef.id };
     } catch (error) {
-      console.error('Rezervasyon hatası:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Rezervasyon oluşturulurken bir hata oluştu.'
-      };
+      console.error('Rezervasyon oluşturma hatası:', error);
+      return { success: false, error: error.message };
     }
   },
 
@@ -159,34 +77,33 @@ export const reservationService = {
     }
   },
 
-  // Rezervasyonu onayla (Admin)
+  // Rezervasyon onayla
   async approveReservation(reservationId) {
     try {
       const reservationRef = doc(db, 'reservations', reservationId);
       await updateDoc(reservationRef, {
         status: 'approved',
-        updatedAt: Timestamp.now()
+        approvedAt: serverTimestamp()
       });
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        error: 'Rezervasyon onaylanırken bir hata oluştu.'
-      };
+      console.error('Rezervasyon onaylama hatası:', error);
+      return { success: false, error: error.message };
     }
   },
 
-  // Rezervasyonu iptal et
+  // Rezervasyon reddet
   async cancelReservation(reservationId) {
     try {
       const reservationRef = doc(db, 'reservations', reservationId);
-      await deleteDoc(reservationRef);
+      await updateDoc(reservationRef, {
+        status: 'rejected',
+        rejectedAt: serverTimestamp()
+      });
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        error: 'Rezervasyon iptal edilirken bir hata oluştu.'
-      };
+      console.error('Rezervasyon reddetme hatası:', error);
+      return { success: false, error: error.message };
     }
   },
 

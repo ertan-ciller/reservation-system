@@ -26,7 +26,7 @@ body {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0.5rem;
+  /*padding: 0.5rem;*/
   overflow-x: hidden;
 }
 
@@ -86,7 +86,7 @@ main {
 
 @media screen and (max-width: 768px) {
   .app {
-    padding: 0.25rem;
+    /*padding: 0.25rem;*/
   }
 
   header {

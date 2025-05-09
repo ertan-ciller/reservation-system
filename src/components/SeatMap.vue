@@ -1,38 +1,90 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore'
 import { db } from '../services/firebase'
-
-const emit = defineEmits(['seat-select'])
-const reservedSeats = ref(new Map())
 
 const props = defineProps({
   selectedSeats: {
     type: Array,
     default: () => []
+  },
+  showDate: {
+    type: String,
+    required: true
   }
 })
+
+const emit = defineEmits(['seat-select'])
+const reservedSeats = ref([])
+const approvedSeats = ref([])
+const rejectedSeats = ref([])
 
 // Firestore'dan rezervasyonları dinle
 let unsubscribe = null
 
+const loadReservedSeats = async () => {
+  try {
+    const reservationsRef = collection(db, 'reservations')
+    const q = query(reservationsRef, where('showDate', '==', props.showDate))
+    const querySnapshot = await getDocs(q)
+    
+    const reserved = []
+    const approved = []
+    const rejected = []
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data()
+      if (data.seatIds) {
+        if (data.status === 'approved') {
+          approved.push(...data.seatIds)
+        } else if (data.status === 'rejected') {
+          rejected.push(...data.seatIds)
+        } else {
+          reserved.push(...data.seatIds)
+        }
+      }
+    })
+    
+    reservedSeats.value = reserved
+    approvedSeats.value = approved
+    rejectedSeats.value = rejected
+  } catch (error) {
+    console.error('Error loading reserved seats:', error)
+  }
+}
+
+watch(() => props.showDate, () => {
+  loadReservedSeats()
+})
+
 onMounted(() => {
-  const q = query(
-    collection(db, 'reservations'),
-    where('status', 'in', ['pending', 'approved'])
-  )
+  loadReservedSeats()
+  
+  // Rezervasyonları gerçek zamanlı dinle
+  const reservationsRef = collection(db, 'reservations')
+  const q = query(reservationsRef, where('showDate', '==', props.showDate))
   
   unsubscribe = onSnapshot(q, (snapshot) => {
-    const reserved = new Map()
+    const reserved = []
+    const approved = []
+    const rejected = []
+    
     snapshot.forEach((doc) => {
       const data = doc.data()
-      // Benzersiz tanımlayıcı oluştur: "sıra-numara" formatında
-      const seatIdentifier = `${data.seatRow}-${data.seatNumber}`
-      console.log('Rezerve edilen koltuk:', seatIdentifier, 'Durum:', data.status)
-      reserved.set(seatIdentifier, data.status)
+      if (data.seatIds) {
+        if (data.status === 'approved') {
+          approved.push(...data.seatIds)
+        } else if (data.status === 'rejected') {
+          rejected.push(...data.seatIds)
+        } else {
+          reserved.push(...data.seatIds)
+        }
+      }
     })
+    
     reservedSeats.value = reserved
-    console.log('Tüm rezerve koltuklar:', Array.from(reservedSeats.value.entries()))
+    approvedSeats.value = approved
+    rejectedSeats.value = rejected
   })
 })
 
@@ -1044,32 +1096,53 @@ const centerBackSeats = ref(generateSeats(sections.centerBack))
 const rightFrontSeats = ref(generateSeats(sections.rightFront))
 const rightBackSeats = ref(generateSeats(sections.rightBack))
 
-const handleSeatClick = (seat) => {
-  // Benzersiz tanımlayıcı oluştur
-  const seatIdentifier = `${seat.row}-${seat.id}`
-  if (reservedSeats.value.has(seatIdentifier)) {
-    return // Rezerve edilmiş koltuklar seçilemez
-  }
+const handleSeatClick = (row, seatNumber) => {
+  const seatFullId = `${row}-${seatNumber}`
+  const isReserved = reservedSeats.value.includes(seatFullId)
+  const isApproved = approvedSeats.value.includes(seatFullId)
   
-  emit('seat-select', {
-    id: seat.id,                    // Koltuk ID'si
-    rowLabel: seat.row,             // Sıra harfi (örn: M)
-    seatNumber: seat.id,            // Görünen koltuk numarası
-    numericId: seat.id,             // Benzersiz numara
-    seatFullId: seatIdentifier      // Benzersiz tanımlayıcı (örn: M-26)
-  })
+  // Eğer koltuk rezerve edilmiş veya onaylanmışsa seçilemez
+  if (!isReserved && !isApproved) {
+    emit('seat-select', {
+      rowLabel: row,
+      seatNumber: seatNumber,
+      seatFullId: seatFullId,
+      category: getSeatCategory(row, seatNumber)
+    })
+  }
 }
 
-// Koltuk rezerve kontrolü için yardımcı fonksiyon
-const isSeatReserved = (row, seatNumber) => {
-  const seatIdentifier = `${row}-${seatNumber}`
-  return reservedSeats.value.has(seatIdentifier)
+const getSeatCategory = (row, seatNumber) => {
+  if (row === 'A' || row === 'B') {
+    return 'P' // Protokol
+  } else if (row === 'C' || row === 'D') {
+    return '1' // 1. Kategori
+  }
+  return '2' // 2. Kategori
 }
 
-// Koltuk durumunu kontrol eden fonksiyon
+const isSeatDisabled = (row, seatNumber) => {
+  const seatFullId = `${row}-${seatNumber}`
+  return reservedSeats.value.includes(seatFullId) || 
+         approvedSeats.value.includes(seatFullId)
+}
+
 const getSeatStatus = (row, seatNumber) => {
-  const seatIdentifier = `${row}-${seatNumber}`
-  return reservedSeats.value.get(seatIdentifier)
+  const seatFullId = `${row}-${seatNumber}`
+  if (approvedSeats.value.includes(seatFullId)) {
+    return 'approved'
+  } else if (reservedSeats.value.includes(seatFullId)) {
+    return 'reserved'
+  } else if (rejectedSeats.value.includes(seatFullId)) {
+    return 'rejected'
+  }
+  return ''
+}
+
+const isSeatSelected = (row, seatNumber) => {
+  return props.selectedSeats.some(seat => 
+    seat.rowLabel === row && seat.seatNumber === seatNumber
+  )
 }
 </script>
 
@@ -1088,12 +1161,16 @@ const getSeatStatus = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': isSeatReserved(seat.row, seat.id),
-                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
-                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
+                'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
+                'selected': isSeatSelected(seat.row, seat.id),
+                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
+                'category-1': getSeatCategory(seat.row, seat.id) === '1',
+                'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
-              @click="handleSeatClick(seat)"
+              @click="handleSeatClick(seat.row, seat.id)"
+              :disabled="isSeatDisabled(seat.row, seat.id)"
             >
               <span class="seat-number">{{ seat.id }}</span>
             </div>
@@ -1107,12 +1184,16 @@ const getSeatStatus = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': isSeatReserved(seat.row, seat.id),
-                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
-                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
+                'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
+                'selected': isSeatSelected(seat.row, seat.id),
+                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
+                'category-1': getSeatCategory(seat.row, seat.id) === '1',
+                'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
-              @click="handleSeatClick(seat)"
+              @click="handleSeatClick(seat.row, seat.id)"
+              :disabled="isSeatDisabled(seat.row, seat.id)"
             >
               <span class="seat-number">{{ seat.id }}</span>
             </div>
@@ -1129,12 +1210,16 @@ const getSeatStatus = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': isSeatReserved(seat.row, seat.id),
-                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
-                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
+                'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
+                'selected': isSeatSelected(seat.row, seat.id),
+                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
+                'category-1': getSeatCategory(seat.row, seat.id) === '1',
+                'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
-              @click="handleSeatClick(seat)"
+              @click="handleSeatClick(seat.row, seat.id)"
+              :disabled="isSeatDisabled(seat.row, seat.id)"
             >
               <span class="seat-number">{{ seat.id }}</span>
             </div>
@@ -1148,12 +1233,16 @@ const getSeatStatus = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': isSeatReserved(seat.row, seat.id),
-                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
-                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
+                'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
+                'selected': isSeatSelected(seat.row, seat.id),
+                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
+                'category-1': getSeatCategory(seat.row, seat.id) === '1',
+                'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
-              @click="handleSeatClick(seat)"
+              @click="handleSeatClick(seat.row, seat.id)"
+              :disabled="isSeatDisabled(seat.row, seat.id)"
             >
               <span class="seat-number">{{ seat.id }}</span>
             </div>
@@ -1170,12 +1259,16 @@ const getSeatStatus = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': isSeatReserved(seat.row, seat.id),
-                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
-                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
+                'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
+                'selected': isSeatSelected(seat.row, seat.id),
+                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
+                'category-1': getSeatCategory(seat.row, seat.id) === '1',
+                'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
-              @click="handleSeatClick(seat)"
+              @click="handleSeatClick(seat.row, seat.id)"
+              :disabled="isSeatDisabled(seat.row, seat.id)"
             >
               <span class="seat-number">{{ seat.id }}</span>
             </div>
@@ -1189,12 +1282,16 @@ const getSeatStatus = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': isSeatReserved(seat.row, seat.id),
-                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
+                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
-                'selected': props.selectedSeats.some(s => s.seatNumber === seat.id && s.rowLabel === seat.row)
+                'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
+                'selected': isSeatSelected(seat.row, seat.id),
+                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
+                'category-1': getSeatCategory(seat.row, seat.id) === '1',
+                'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
-              @click="handleSeatClick(seat)"
+              @click="handleSeatClick(seat.row, seat.id)"
+              :disabled="isSeatDisabled(seat.row, seat.id)"
             >
               <span class="seat-number">{{ seat.id }}</span>
             </div>
@@ -1298,42 +1395,29 @@ const getSeatStatus = (row, seatNumber) => {
   text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
 }
 
-.seat:hover:not(.reserved) {
+.seat:hover:not(.reserved):not(.approved) {
   transform: translateY(-4px) scale(1.08);
   border: none;
   background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
   box-shadow: 0 6px 16px rgba(52, 152, 219, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);
 }
 
-.seat:hover:not(.reserved) .seat-number {
+.seat:hover:not(.reserved):not(.approved) .seat-number {
   color: #1976d2;
   text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
 }
 
 .seat.reserved {
   cursor: not-allowed;
-  background: repeating-linear-gradient(135deg, #b0bec5 0 6px, #90a4ae 6px 12px);
+  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
   color: #fff;
   box-shadow: none;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
-.seat.pending {
-  background: linear-gradient(145deg, #ffbaba 0%, #ff5252 100%);
-  border: none;
+.seat.reserved .seat-number {
   color: #fff;
-}
-
-.seat.approved {
-  background: linear-gradient(145deg, #b2f7c1 0%, #4caf50 100%);
-  border: none;
-  color: #fff;
-}
-
-.seat.pending .seat-number,
-.seat.approved .seat-number {
-  color: #fff;
-  text-shadow: 0 1px 2px #388e3c, 0 0.5px 0.5px #fff;
+  text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
 }
 
 .seat.selected {
@@ -1346,6 +1430,52 @@ const getSeatStatus = (row, seatNumber) => {
 .seat.selected .seat-number {
   color: #fff !important;
   text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
+}
+
+.seat.protokol {
+  border-color: #e74c3c;
+}
+
+.seat.category-1 {
+  border-color: #3498db;
+}
+
+.seat.category-2 {
+  border-color: #2ecc71;
+}
+
+.seat.approved {
+  cursor: not-allowed;
+  background: linear-gradient(145deg, #22c55e 0%, #4ade80 100%);
+  color: #fff;
+  box-shadow: none;
+  opacity: 0.8;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.seat.approved:hover {
+  transform: none;
+  background: linear-gradient(145deg, #22c55e 0%, #4ade80 100%);
+  cursor: not-allowed;
+}
+
+.seat.approved .seat-number {
+  color: #fff !important;
+  text-shadow: 0 1px 2px #22c55e, 0 0.5px 0.5px #fff;
+}
+
+.seat.rejected {
+  cursor: pointer;
+  background: linear-gradient(145deg, #f5f7fa 0%, #c3cfe2 100%);
+  color: #34495e;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10), 0 1.5px 3px rgba(44, 62, 80, 0.08);
+}
+
+.seat.rejected:hover {
+  transform: translateY(-4px) scale(1.08);
+  background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
+  box-shadow: 0 6px 16px rgba(52, 152, 219, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);
 }
 
 /* Tablet ve mobil için responsive tasarım */
