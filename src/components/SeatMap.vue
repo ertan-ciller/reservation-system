@@ -53,22 +53,14 @@ const loadReservedSeats = async () => {
   }
 }
 
-watch(() => props.showDate, () => {
-  loadReservedSeats()
-})
-
-onMounted(() => {
-  loadReservedSeats()
-  
-  // Rezervasyonları gerçek zamanlı dinle
+const startSnapshotListener = () => {
+  if (unsubscribe) unsubscribe()
   const reservationsRef = collection(db, 'reservations')
   const q = query(reservationsRef, where('showDate', '==', props.showDate))
-  
   unsubscribe = onSnapshot(q, (snapshot) => {
     const reserved = []
     const approved = []
     const rejected = []
-    
     snapshot.forEach((doc) => {
       const data = doc.data()
       if (data.seatIds) {
@@ -81,17 +73,24 @@ onMounted(() => {
         }
       }
     })
-    
     reservedSeats.value = reserved
     approvedSeats.value = approved
     rejectedSeats.value = rejected
   })
+}
+
+onMounted(() => {
+  loadReservedSeats()
+  startSnapshotListener()
+})
+
+watch(() => props.showDate, () => {
+  loadReservedSeats()
+  startSnapshotListener()
 })
 
 onUnmounted(() => {
-  if (unsubscribe) {
-    unsubscribe()
-  }
+  if (unsubscribe) unsubscribe()
 })
 
 // Define the seating sections
@@ -1316,7 +1315,7 @@ const isSeatSelected = (row, seatNumber) => {
   min-width: 100%;
   margin: 10px auto;
   padding: 0.5rem;
-  transform: scale(0.7);
+  transform: scale(0.9);
   transform-origin: top center;
   position: relative;
   display: flex;
@@ -1501,7 +1500,7 @@ const isSeatSelected = (row, seatNumber) => {
 
 @media (max-width: 768px) {
   .seat-map {
-    transform: scale(0.6);
+    transform: scale(0.8);
     margin: 0 auto;
   }
 

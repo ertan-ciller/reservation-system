@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import SeatMap from '../components/SeatMap.vue'
 import ReservationDialog from '../components/ReservationDialog.vue'
 import { reservationService } from '../services/reservationService'
@@ -110,6 +110,23 @@ const closePrices = () => {
 const toggleSelectedSeats = () => {
   showSelectedSeats.value = !showSelectedSeats.value
 }
+
+const centerSeatMapScroll = () => {
+  nextTick(() => {
+    const container = seatMapContainerRef.value
+    if (container) {
+      container.scrollLeft = (container.scrollWidth - container.offsetWidth) / 2
+    }
+  })
+}
+
+onMounted(() => {
+  centerSeatMapScroll()
+})
+
+watch(selectedDate, () => {
+  centerSeatMapScroll()
+})
 </script>
 
 <template>
@@ -265,7 +282,7 @@ main {
   min-width: 100%;
   max-width: 100%;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: flex-start;
   overflow-x: auto;
   overflow-y: hidden;
@@ -274,18 +291,20 @@ main {
   padding: 1rem 0;
   margin: 0 auto;
   box-sizing: border-box;
+  scroll-snap-type: x mandatory;
 }
 
 :deep(.seat-map) {
-  margin: 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: fit-content;
+  width: 100%;
+  max-width: 1200px;
   min-width: unset;
   max-width: unset;
   transform: scale(0.9);
-  transform-origin: top center;
+  transform-origin: center center;
+  scroll-snap-align: center;
 }
 
 @media (max-width: 1024px) {
@@ -308,9 +327,12 @@ main {
     min-width: 100%;
     max-width: 100%;
     justify-content: center;
-    padding: 0.25rem 0;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
   :deep(.seat-map) {
+    width: auto;
+    max-width: 100vw;
     margin: 0 auto;
     transform: scale(0.5);
   }
