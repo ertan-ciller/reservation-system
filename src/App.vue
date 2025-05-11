@@ -1,9 +1,13 @@
 <script setup>
 // Router view kullanacağımız için bu importlara gerek yok
+import ToastContainer from './components/ToastContainer.vue'
 </script>
 
 <template>
-  <router-view />
+  <div id="app">
+    <router-view></router-view>
+    <ToastContainer />
+  </div>
 </template>
 
 <style>

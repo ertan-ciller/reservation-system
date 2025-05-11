@@ -1121,22 +1121,30 @@ const getSeatCategory = (row, seatNumber) => {
   return '2' // 2. Kategori
 }
 
-const isSeatDisabled = (row, seatNumber) => {
-  const seatFullId = `${row}-${seatNumber}`
-  return reservedSeats.value.includes(seatFullId) || 
-         approvedSeats.value.includes(seatFullId)
-}
-
-const getSeatStatus = (row, seatNumber) => {
-  const seatFullId = `${row}-${seatNumber}`
+const getSeatStatus = (row, seatId) => {
+  const seatFullId = `${row}-${seatId}`
+  
+  // Önce reddedilen rezervasyonları kontrol et
+  if (rejectedSeats.value.includes(seatFullId)) {
+    return 'available' // Reddedilen rezervasyonların koltukları seçilebilir
+  }
+  
+  // Sonra onaylanmış rezervasyonları kontrol et
   if (approvedSeats.value.includes(seatFullId)) {
     return 'approved'
-  } else if (reservedSeats.value.includes(seatFullId)) {
-    return 'reserved'
-  } else if (rejectedSeats.value.includes(seatFullId)) {
-    return 'rejected'
   }
-  return ''
+  
+  // Son olarak bekleyen rezervasyonları kontrol et
+  if (reservedSeats.value.includes(seatFullId)) {
+    return 'reserved'
+  }
+  
+  return 'available'
+}
+
+const isSeatDisabled = (row, seatId) => {
+  const status = getSeatStatus(row, seatId)
+  return status === 'approved' || status === 'reserved'
 }
 
 const isSeatSelected = (row, seatNumber) => {

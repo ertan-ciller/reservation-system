@@ -96,10 +96,38 @@ export const reservationService = {
   async cancelReservation(reservationId) {
     try {
       const reservationRef = doc(db, 'reservations', reservationId);
+      const reservationDoc = await getDoc(reservationRef);
+      
+      if (!reservationDoc.exists()) {
+        throw new Error('Rezervasyon bulunamadı');
+      }
+
+      const reservationData = reservationDoc.data();
+      
+      // Rezervasyonu reddedildi olarak işaretle
       await updateDoc(reservationRef, {
         status: 'rejected',
-        rejectedAt: serverTimestamp()
+        rejectedAt: serverTimestamp(),
+        // Koltukların tekrar seçilebilir olduğunu belirtmek için
+        seatStatus: 'available'
       });
+
+      // Koltukların durumunu güncelle
+      if (reservationData.seatIds && Array.isArray(reservationData.seatIds)) {
+        const batch = writeBatch(db);
+        
+        // Her bir koltuk için ayrı bir doküman oluştur veya güncelle
+        for (const seatId of reservationData.seatIds) {
+          const seatRef = doc(db, 'seats', seatId);
+          batch.set(seatRef, {
+            status: 'available',
+            lastUpdated: serverTimestamp()
+          }, { merge: true });
+        }
+        
+        await batch.commit();
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Rezervasyon reddetme hatası:', error);

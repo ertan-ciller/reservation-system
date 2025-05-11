@@ -93,7 +93,8 @@ const filteredReservations = computed(() => {
     const matchesAllTerms = searchTerms.every(term => 
       fullName.includes(term) ||
       res.phoneNumber?.includes(term) ||
-      res.seatFullId?.toLowerCase().includes(term)
+      // Koltuk numaralarında arama
+      res.seatIds?.some(seatId => seatId.toLowerCase().includes(term))
     )
     
     return matchesAllTerms

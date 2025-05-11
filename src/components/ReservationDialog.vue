@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { toastService } from '../services/toastService'
 
 const props = defineProps({
   selectedSeats: {
@@ -13,6 +14,10 @@ const props = defineProps({
   errorMessage: {
     type: String,
     default: ''
+  },
+  reservedSeats: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -29,6 +34,8 @@ const errors = ref({
   lastName: '',
   phone: ''
 })
+
+const successMessage = ref('')
 
 const validatePhone = (phone) => {
   const phoneRegex = /^(5\d{9})$/
@@ -75,8 +82,13 @@ const handleSubmit = async () => {
     try {
       await emit('submit', reservationData)
       formData.value = { firstName: '', lastName: '', phone: '' }
+      toastService.success('Rezervasyonunuz başarıyla oluşturuldu!')
+      // Rezerve edilen koltukları güncelle
+      props.reservedSeats.push(...reservationData.seatIds)
+      emit('close')
     } catch (error) {
       console.error('Rezervasyon hatası:', error)
+      toastService.error('Rezervasyon oluşturulurken bir hata oluştu.')
     }
   }
 }
@@ -93,7 +105,11 @@ const handleSubmit = async () => {
       <div class="selected-seats-info">
         <h3>Seçilen Koltuklar:</h3>
         <ul class="selected-seats-list">
-          <li v-for="seat in selectedSeats" :key="seat.seatFullId">
+          <li v-for="seat in selectedSeats" 
+              :key="seat.seatFullId"
+              :class="{ 'reserved': reservedSeats.some(reserved => 
+                reserved.id === seat.seatNumber && reserved.row === seat.rowLabel
+              )}">
             {{ seat.rowLabel }} - {{ seat.seatNumber }}
           </li>
         </ul>
@@ -138,6 +154,7 @@ const handleSubmit = async () => {
         </div>
 
         <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
+        <div class="success-message" v-if="successMessage">{{ successMessage }}</div>
 
         <button type="submit" class="submit-button" :disabled="isLoading">
           {{ isLoading ? 'İşleniyor...' : 'Rezervasyon Yap' }}
@@ -230,6 +247,11 @@ const handleSubmit = async () => {
   font-weight: 500;
 }
 
+.selected-seats-list li.reserved {
+  background-color: #3182ce;
+  color: white;
+}
+
 .total-price {
   margin: 0;
   font-weight: 600;
@@ -281,6 +303,16 @@ const handleSubmit = async () => {
 .error-message {
   color: #dc3545;
   font-size: 0.8rem;
+}
+
+.success-message {
+  color: #28a745;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  background-color: #d4edda;
+  border-radius: 4px;
+  text-align: center;
 }
 
 .submit-button {

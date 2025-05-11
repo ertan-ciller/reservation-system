@@ -6,6 +6,7 @@ import { reservationService } from '../services/reservationService'
 import { addDoc, collection } from 'firebase/firestore'
 import { db } from '../services/firebase'
 import DateSelector from '../components/DateSelector.vue'
+import { toastService } from '../services/toastService'
 
 const selectedDate = ref('')
 const selectedSeats = ref([])
@@ -30,7 +31,7 @@ const totalPrice = computed(() => {
 
 const handleSeatSelect = (seat) => {
   if (selectedSeats.value.length >= 10 && !selectedSeats.value.some(s => s.seatFullId === seat.seatFullId)) {
-    alert('En fazla 10 koltuk seçebilirsiniz!')
+    toastService.warning('En fazla 10 koltuk seçebilirsiniz!')
     return
   }
   const existingIndex = selectedSeats.value.findIndex(s => s.seatFullId === seat.seatFullId)
@@ -52,7 +53,7 @@ const removeSeat = (seat) => {
 
 const handleReservationClick = () => {
   if (selectedSeats.value.length === 0) {
-    alert('Lütfen en az bir koltuk seçiniz!')
+    toastService.warning('Lütfen en az bir koltuk seçiniz!')
     return
   }
   isDialogOpen.value = true
@@ -87,13 +88,14 @@ const handleReservation = async (userInfo) => {
     if (result.success) {
       isDialogOpen.value = false
       selectedSeats.value = []
-      await loadReservedSeats()
-      alert('Rezervasyonlarınız başarıyla oluşturuldu!')
+      toastService.success('Rezervasyonlarınız başarıyla oluşturuldu!')
     } else {
       errorMessage.value = result.error || 'Bazı rezervasyonlar oluşturulamadı.'
+      toastService.error(result.error || 'Bazı rezervasyonlar oluşturulamadı.')
     }
   } catch (error) {
     errorMessage.value = error.message || 'Rezervasyon oluşturulurken bir hata oluştu.'
+    toastService.error(error.message || 'Rezervasyon oluşturulurken bir hata oluştu.')
     console.error('Rezervasyon hatası:', error)
   } finally {
     isLoading.value = false
