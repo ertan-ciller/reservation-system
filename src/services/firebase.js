@@ -20,13 +20,20 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // Offline persistence'ı etkinleştir
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Birden fazla sekme açık olduğu için offline persistence etkinleştirilemedi');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Tarayıcınız offline persistence desteklemiyor');
+try {
+  await enableIndexedDbPersistence(db, {
+    synchronizeTabs: true
+  });
+  console.log('Offline persistence başarıyla etkinleştirildi');
+} catch (err) {
+  if (err.code == 'failed-precondition') {
+    // Birden fazla sekme açık
+    console.warn('Offline persistence etkinleştirilemedi: Birden fazla sekme açık');
+  } else if (err.code == 'unimplemented') {
+    // Tarayıcı desteklemiyor
+    console.warn('Offline persistence desteklenmiyor');
   }
-});
+}
 
 // Bağlantı durumunu kontrol et
 let isOnline = true;

@@ -29,18 +29,44 @@ const totalPrice = computed(() => {
   }, 0)
 })
 
-const handleSeatSelect = (seat) => {
-  if (selectedSeats.value.length >= 10 && !selectedSeats.value.some(s => s.seatFullId === seat.seatFullId)) {
-    toastService.warning('En fazla 10 koltuk seçebilirsiniz!')
-    return
+const handleSeatSelect = async (seat) => {
+  if (!selectedDate.value) {
+    toastService.warning('Lütfen önce bir tarih seçiniz!');
+    return;
   }
-  const existingIndex = selectedSeats.value.findIndex(s => s.seatFullId === seat.seatFullId)
-  
-  if (existingIndex === -1) {
-    selectedSeats.value.push(seat)
-    showSelectedSeats.value = true
-  } else {
-    selectedSeats.value.splice(existingIndex, 1)
+
+  if (selectedSeats.value.length >= 10 && !selectedSeats.value.some(s => s.seatFullId === seat.seatFullId)) {
+    toastService.warning('En fazla 10 koltuk seçebilirsiniz!');
+    return;
+  }
+
+  try {
+    // Koltuğun müsaitlik durumunu kontrol et
+    const isAvailable = await reservationService.checkSeatAvailability(
+      {
+        id: seat.seatNumber,
+        row: seat.rowLabel,
+        numericId: parseInt(seat.seatNumber)
+      },
+      selectedDate.value
+    );
+
+    if (!isAvailable) {
+      toastService.error('Bu koltuk müsait değil!');
+      return;
+    }
+
+    const existingIndex = selectedSeats.value.findIndex(s => s.seatFullId === seat.seatFullId);
+    
+    if (existingIndex === -1) {
+      selectedSeats.value.push(seat);
+      showSelectedSeats.value = true;
+    } else {
+      selectedSeats.value.splice(existingIndex, 1);
+    }
+  } catch (error) {
+    console.error('Koltuk seçimi hatası:', error);
+    toastService.error('Koltuk seçimi sırasında bir hata oluştu');
   }
 }
 
@@ -67,12 +93,21 @@ const handleDialogClose = () => {
 
 const handleReservation = async (userInfo) => {
   try {
-    isLoading.value = true
-    errorMessage.value = ''
+    if (!selectedDate.value) {
+      toastService.error('Lütfen bir tarih seçiniz!');
+      return;
+    }
+
+    isLoading.value = true;
+    errorMessage.value = '';
 
     const seatIds = selectedSeats.value.map(seat => {
-      return `${seat.rowLabel}-${seat.seatNumber}`
-    })
+      return {
+        row: seat.rowLabel,
+        numericId: parseInt(seat.seatNumber),
+        id: seat.seatNumber
+      };
+    });
 
     const reservationData = {
       firstName: userInfo.firstName,
@@ -81,24 +116,24 @@ const handleReservation = async (userInfo) => {
       seatIds: seatIds,
       showDate: selectedDate.value,
       status: 'pending'
-    }
+    };
 
-    const result = await reservationService.createReservation(reservationData)
+    const result = await reservationService.createReservation(reservationData);
     
     if (result.success) {
-      isDialogOpen.value = false
-      selectedSeats.value = []
-      toastService.success('Rezervasyonlarınız başarıyla oluşturuldu!')
+      isDialogOpen.value = false;
+      selectedSeats.value = [];
+      toastService.success('Rezervasyonlarınız başarıyla oluşturuldu!');
     } else {
-      errorMessage.value = result.error || 'Bazı rezervasyonlar oluşturulamadı.'
-      toastService.error(result.error || 'Bazı rezervasyonlar oluşturulamadı.')
+      errorMessage.value = result.error || 'Bazı rezervasyonlar oluşturulamadı.';
+      toastService.error(result.error || 'Bazı rezervasyonlar oluşturulamadı.');
     }
   } catch (error) {
-    errorMessage.value = error.message || 'Rezervasyon oluşturulurken bir hata oluştu.'
-    toastService.error(error.message || 'Rezervasyon oluşturulurken bir hata oluştu.')
-    console.error('Rezervasyon hatası:', error)
+    errorMessage.value = error.message || 'Rezervasyon oluşturulurken bir hata oluştu.';
+    toastService.error(error.message || 'Rezervasyon oluşturulurken bir hata oluştu.');
+    console.error('Rezervasyon hatası:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 

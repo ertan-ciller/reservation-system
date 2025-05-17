@@ -6,30 +6,53 @@ service cloud.firestore {
       return request.resource.data.firstName != null &&
              request.resource.data.lastName != null &&
              request.resource.data.phoneNumber != null &&
-             request.resource.data.seatId != null;
+             request.resource.data.seatIds != null;
     }
 
-    function isValidLock() {
-      return request.resource.data.lockedBy != null &&
-             request.resource.data.lockedUntil != null;
+    function isValidSeat() {
+      return request.resource.data.status != null &&
+             request.resource.data.showDate != null;
     }
 
     function isAdmin() {
       return request.auth != null && request.auth.token.email == 'admin@test.com';
     }
 
+    function isExpired(timestamp) {
+      return timestamp < request.time;
+    }
+
     // Rezervasyonlar için kurallar
     match /reservations/{reservationId} {
       allow read: if true;
       allow create: if isValidReservation();
-      allow update, delete: if isAdmin(); // Sadece admin güncelleyebilir ve silebilir
+      allow update: if isAdmin() || 
+                   (resource.data.status == 'pending' && 
+                    request.resource.data.status in ['approved', 'rejected']);
+      allow delete: if isAdmin() || 
+                   (resource.data.status == 'pending' && 
+                    isExpired(resource.data.expirationTime));
     }
     
-    // Koltuk kilitleri için kurallar
-    match /seatLocks/{seatId} {
+    // Koltuklar için kurallar
+    match /seats/{seatId} {
       allow read: if true;
-      allow create, update: if isValidLock();
-      allow delete: if true;
+      allow create: if isValidSeat();
+      allow update: if isValidSeat() && 
+                   (
+                     // Admin her zaman güncelleyebilir
+                     isAdmin() ||
+                     // Pending durumuna geçiş sadece koltuk müsaitse
+                     (request.resource.data.status == 'pending' && 
+                      (!exists(/databases/$(database)/documents/seats/$(seatId)) || 
+                       resource.data.status == 'available')) ||
+                     // Reserved durumuna geçiş sadece pending durumundan olabilir
+                     (request.resource.data.status == 'reserved' && 
+                      resource.data.status == 'pending') ||
+                     // Available durumuna geçiş her zaman yapılabilir
+                     request.resource.data.status == 'available'
+                   );
+      allow delete: if isAdmin();
     }
   }
 } 

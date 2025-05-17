@@ -143,6 +143,12 @@ const getStatusText = (status) => {
       return 'Bekliyor'
   }
 }
+
+// Koltuk bilgilerini formatla
+const formatSeatIds = (seatIds) => {
+  if (!Array.isArray(seatIds)) return '';
+  return seatIds.map(seat => `${seat.row}-${seat.id}`).join(', ');
+}
 </script>
 
 <template>
@@ -200,9 +206,7 @@ const getStatusText = (status) => {
               <td>{{ reservation.phoneNumber }}</td>
               <td class="seat-cell">
                 <div class="seat-list">
-                  <span v-for="(seatId, index) in reservation.seatIds" :key="index" class="seat-tag">
-                    {{ seatId }}
-                  </span>
+                  {{ formatSeatIds(reservation.seatIds) }}
                 </div>
               </td>
               <td class="show-date">{{ formatDate(reservation.showDate, 'show') }}</td>
@@ -390,6 +394,10 @@ tr:last-child td {
 .seat-cell {
   font-family: monospace;
   font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .show-date {
@@ -614,9 +622,9 @@ tr:last-child td {
 }
 
 .seat-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: inline;
+  color: #1e40af;
+  font-weight: 500;
 }
 
 .seat-tag {

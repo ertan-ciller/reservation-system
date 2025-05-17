@@ -1,6 +1,18 @@
 <script setup>
 // Router view kullanacağımız için bu importlara gerek yok
 import ToastContainer from './components/ToastContainer.vue'
+import { onMounted, onUnmounted } from 'vue';
+import { reservationService } from './services/reservationService';
+
+onMounted(() => {
+  // Periyodik kilit kontrolünü başlat
+  reservationService.startLockCheck();
+});
+
+onUnmounted(() => {
+  // Periyodik kilit kontrolünü durdur
+  reservationService.stopLockCheck();
+});
 </script>
 
 <template>

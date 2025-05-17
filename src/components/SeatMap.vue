@@ -24,59 +24,74 @@ let unsubscribe = null
 
 const loadReservedSeats = async () => {
   try {
-    const reservationsRef = collection(db, 'reservations')
-    const q = query(reservationsRef, where('showDate', '==', props.showDate))
-    const querySnapshot = await getDocs(q)
+    const reservationsRef = collection(db, 'seats');
+    const q = query(
+      reservationsRef, 
+      where('showDate', '==', props.showDate),
+      where('status', 'in', ['pending', 'approved'])
+    );
     
-    const reserved = []
-    const approved = []
-    const rejected = []
+    const querySnapshot = await getDocs(q);
+    
+    const reserved = [];
+    const approved = [];
+    const rejected = [];
     
     querySnapshot.forEach((doc) => {
-      const data = doc.data()
-      if (data.seatIds) {
-        if (data.status === 'approved') {
-          approved.push(...data.seatIds)
-        } else if (data.status === 'rejected') {
-          rejected.push(...data.seatIds)
-        } else {
-          reserved.push(...data.seatIds)
-        }
+      const data = doc.data();
+      // showDate_row-numericId formatından sadece row-numericId kısmını al
+      const seatId = doc.id.split('_')[1];
+      
+      if (data.status === 'approved') {
+        approved.push(seatId);
+      } else if (data.status === 'rejected') {
+        rejected.push(seatId);
+      } else if (data.status === 'pending') {
+        reserved.push(seatId);
       }
-    })
+    });
     
-    reservedSeats.value = reserved
-    approvedSeats.value = approved
-    rejectedSeats.value = rejected
+    reservedSeats.value = reserved;
+    approvedSeats.value = approved;
+    rejectedSeats.value = rejected;
   } catch (error) {
-    console.error('Error loading reserved seats:', error)
+    console.error('Error loading reserved seats:', error);
   }
 }
 
 const startSnapshotListener = () => {
-  if (unsubscribe) unsubscribe()
-  const reservationsRef = collection(db, 'reservations')
-  const q = query(reservationsRef, where('showDate', '==', props.showDate))
+  if (unsubscribe) unsubscribe();
+  
+  const reservationsRef = collection(db, 'seats');
+  const q = query(
+    reservationsRef,
+    where('showDate', '==', props.showDate),
+    where('status', 'in', ['pending', 'approved'])
+  );
+  
   unsubscribe = onSnapshot(q, (snapshot) => {
-    const reserved = []
-    const approved = []
-    const rejected = []
+    const reserved = [];
+    const approved = [];
+    const rejected = [];
+    
     snapshot.forEach((doc) => {
-      const data = doc.data()
-      if (data.seatIds) {
-        if (data.status === 'approved') {
-          approved.push(...data.seatIds)
-        } else if (data.status === 'rejected') {
-          rejected.push(...data.seatIds)
-        } else {
-          reserved.push(...data.seatIds)
-        }
+      const data = doc.data();
+      // showDate_row-numericId formatından sadece row-numericId kısmını al
+      const seatId = doc.id.split('_')[1];
+      
+      if (data.status === 'approved') {
+        approved.push(seatId);
+      } else if (data.status === 'rejected') {
+        rejected.push(seatId);
+      } else if (data.status === 'pending') {
+        reserved.push(seatId);
       }
-    })
-    reservedSeats.value = reserved
-    approvedSeats.value = approved
-    rejectedSeats.value = rejected
-  })
+    });
+    
+    reservedSeats.value = reserved;
+    approvedSeats.value = approved;
+    rejectedSeats.value = rejected;
+  });
 }
 
 onMounted(() => {
@@ -1096,9 +1111,9 @@ const rightFrontSeats = ref(generateSeats(sections.rightFront))
 const rightBackSeats = ref(generateSeats(sections.rightBack))
 
 const handleSeatClick = (row, seatNumber) => {
-  const seatFullId = `${row}-${seatNumber}`
-  const isReserved = reservedSeats.value.includes(seatFullId)
-  const isApproved = approvedSeats.value.includes(seatFullId)
+  const seatFullId = `${row}-${seatNumber}`;
+  const isReserved = reservedSeats.value.includes(seatFullId);
+  const isApproved = approvedSeats.value.includes(seatFullId);
   
   // Eğer koltuk rezerve edilmiş veya onaylanmışsa seçilemez
   if (!isReserved && !isApproved) {
@@ -1107,7 +1122,7 @@ const handleSeatClick = (row, seatNumber) => {
       seatNumber: seatNumber,
       seatFullId: seatFullId,
       category: getSeatCategory(row, seatNumber)
-    })
+    });
   }
 }
 
@@ -1123,27 +1138,27 @@ const getSeatCategory = (row, seatNumber) => {
 const getSeatStatus = (row, seatId) => {
   const seatFullId = `${row}-${seatId}`
   
-  // Önce reddedilen rezervasyonları kontrol et
-  if (rejectedSeats.value.includes(seatFullId)) {
-    return 'available' // Reddedilen rezervasyonların koltukları seçilebilir
-  }
-  
-  // Sonra onaylanmış rezervasyonları kontrol et
+  // Önce onaylanmış rezervasyonları kontrol et
   if (approvedSeats.value.includes(seatFullId)) {
     return 'approved'
   }
   
-  // Son olarak bekleyen rezervasyonları kontrol et
+  // Sonra bekleyen rezervasyonları kontrol et
   if (reservedSeats.value.includes(seatFullId)) {
-    return 'reserved'
+    return 'pending'
+  }
+  
+  // Reddedilen rezervasyonları kontrol et
+  if (rejectedSeats.value.includes(seatFullId)) {
+    return 'available'
   }
   
   return 'available'
 }
 
 const isSeatDisabled = (row, seatId) => {
-  const status = getSeatStatus(row, seatId)
-  return status === 'approved' || status === 'reserved'
+  const seatFullId = `${row}-${seatId}`;
+  return reservedSeats.value.includes(seatFullId) || approvedSeats.value.includes(seatFullId);
 }
 
 const isSeatSelected = (row, seatNumber) => {
@@ -1168,7 +1183,7 @@ const isSeatSelected = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
@@ -1191,7 +1206,7 @@ const isSeatSelected = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
@@ -1217,7 +1232,7 @@ const isSeatSelected = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
@@ -1240,7 +1255,7 @@ const isSeatSelected = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
@@ -1266,7 +1281,7 @@ const isSeatSelected = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
@@ -1289,7 +1304,7 @@ const isSeatSelected = (row, seatNumber) => {
               :key="seat.id"
               class="seat"
               :class="{
-                'reserved': getSeatStatus(seat.row, seat.id) === 'reserved',
+                'pending': getSeatStatus(seat.row, seat.id) === 'pending',
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
@@ -1402,14 +1417,14 @@ const isSeatSelected = (row, seatNumber) => {
   text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
 }
 
-.seat:hover:not(.reserved):not(.approved) {
+.seat:hover:not(.reserved):not(.approved):not(.pending) {
   transform: translateY(-4px) scale(1.08);
   border: none;
   background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
   box-shadow: 0 6px 16px rgba(52, 152, 219, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);
 }
 
-.seat:hover:not(.reserved):not(.approved) .seat-number {
+.seat:hover:not(.reserved):not(.approved):not(.pending) .seat-number {
   color: #1976d2;
   text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
 }
@@ -1422,8 +1437,14 @@ const isSeatSelected = (row, seatNumber) => {
   opacity: 0.8;
 }
 
+.seat.reserved:hover {
+  transform: none;
+  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
+  cursor: not-allowed;
+}
+
 .seat.reserved .seat-number {
-  color: #fff;
+  color: #fff !important;
   text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
 }
 
@@ -1452,13 +1473,11 @@ const isSeatSelected = (row, seatNumber) => {
 }
 
 .seat.approved {
-  cursor: not-allowed;
   background: linear-gradient(145deg, #22c55e 0%, #4ade80 100%);
   color: #fff;
+  cursor: not-allowed;
   box-shadow: none;
   opacity: 0.8;
-  pointer-events: auto;
-  user-select: none;
 }
 
 .seat.approved:hover {
@@ -1468,7 +1487,7 @@ const isSeatSelected = (row, seatNumber) => {
 }
 
 .seat.approved .seat-number {
-  color: #fff !important;
+  color: #fff;
   text-shadow: 0 1px 2px #22c55e, 0 0.5px 0.5px #fff;
 }
 
@@ -1483,6 +1502,25 @@ const isSeatSelected = (row, seatNumber) => {
   transform: translateY(-4px) scale(1.08);
   background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
   box-shadow: 0 6px 16px rgba(52, 152, 219, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);
+}
+
+.seat.pending {
+  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
+  color: #fff;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.8;
+}
+
+.seat.pending:hover {
+  transform: none;
+  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
+  cursor: not-allowed;
+}
+
+.seat.pending .seat-number {
+  color: #fff;
+  text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
 }
 
 /* Tablet ve mobil için responsive tasarım */
