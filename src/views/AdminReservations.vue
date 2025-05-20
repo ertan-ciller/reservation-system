@@ -158,7 +158,14 @@ const formatDate = (date, type = 'full') => {
 
 // Bekleyen koltukları kontrol et
 const hasPendingSeats = (reservation) => {
+  // Önce genel rezervasyon durumunu kontrol et
+  const status = calculateReservationStatus(reservation);
+  if (status === 'approved' || status === 'rejected') return false;
+  
+  // Eğer seatStatuses yoksa ve status approved/rejected değilse, pending olarak kabul et
   if (!reservation.seatStatuses) return true;
+  
+  // Her bir koltuğun durumunu kontrol et
   return reservation.seatIds.some(seat => {
     const fullSeatId = `${seat.row}-${seat.id}`;
     return !reservation.seatStatuses[fullSeatId] || reservation.seatStatuses[fullSeatId] === 'pending';
