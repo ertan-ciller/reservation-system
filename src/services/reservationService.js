@@ -124,6 +124,7 @@ export const reservationService = {
       }
 
       const reservationData = reservationDoc.data();
+      const seatStatuses = {};
 
       // Her koltuğu güncelle
       for (const seatId of reservationData.seatIds) {
@@ -136,12 +137,16 @@ export const reservationService = {
           reservedAt: serverTimestamp(),
           reservationId: reservationId
         });
+
+        // Koltuk durumunu kaydet
+        seatStatuses[seatFullId] = 'approved';
       }
 
       // Rezervasyonu güncelle
       await updateDoc(reservationRef, {
         status: 'approved',
-        approvedAt: serverTimestamp()
+        approvedAt: serverTimestamp(),
+        seatStatuses: seatStatuses
       });
 
       return { success: true };
@@ -162,6 +167,7 @@ export const reservationService = {
       }
 
       const reservationData = reservationDoc.data();
+      const seatStatuses = {};
       
       // Her koltuğu güncelle
       for (const seatId of reservationData.seatIds) {
@@ -170,12 +176,16 @@ export const reservationService = {
         
         // Koltuğu sil (available durumuna getir)
         await deleteDoc(seatRef);
+
+        // Koltuk durumunu kaydet
+        seatStatuses[seatFullId] = 'rejected';
       }
 
       // Rezervasyonu güncelle
       await updateDoc(reservationRef, {
         status: 'rejected',
-        rejectedAt: serverTimestamp()
+        rejectedAt: serverTimestamp(),
+        seatStatuses: seatStatuses
       });
 
       return { success: true };
