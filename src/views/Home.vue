@@ -19,11 +19,9 @@ const seatMapContainerRef = ref(null)
 const totalPrice = computed(() => {
   return selectedSeats.value.reduce((total, seat) => {
     // Koltuk kategorisine göre fiyat belirleme
-    let price = 500 // Varsayılan fiyat (2. Kategori)
+    let price = 150 // 2. Kategori fiyatı
     if (seat.category === '1') {
-      price = 600
-    } else if (seat.category === 'P') {
-      price = 700
+      price = 300 // 1. Kategori fiyatı
     }
     return total + price
   }, 0)
@@ -201,16 +199,22 @@ watch(selectedDate, () => {
           </div>
           <div class="price-list">
             <div class="price-item">
-              <span>500,00 ₺</span>
-              <span class="category">2. Kategori</span>
+              <div class="category-indicator">
+                <div class="color-box blue-border"></div>
+                <div class="price-info">
+                  <span>150,00 ₺</span>
+                  <span class="category">2. Kategori</span>
+                </div>
+              </div>
             </div>
             <div class="price-item">
-              <span>600,00 ₺</span>
-              <span class="category">1. Kategori</span>
-            </div>
-            <div class="price-item">
-              <span>700,00 ₺</span>
-              <span class="category">Protokol</span>
+              <div class="category-indicator">
+                <div class="color-box green-border"></div>
+                <div class="price-info">
+                  <span>300,00 ₺</span>
+                  <span class="category">1. Kategori</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -437,23 +441,49 @@ main {
   border-bottom: 0px solid #eee;
 }
 
-.price-item {
-  flex: 1;
+.category-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: white;
+}
+
+.blue-border {
+  border: 2px solid #2196f3;
+}
+
+.green-border {
+  border: 2px solid #4caf50;
+}
+
+.price-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+}
+
+.price-item {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f5f5f5;
 }
 
 .price-item span:first-child {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #333;
   margin-bottom: 4px;
 }
 
 .category {
-  font-size: 12px;
+  font-size: 14px;
   color: #666;
 }
 

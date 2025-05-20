@@ -1127,12 +1127,11 @@ const handleSeatClick = (row, seatNumber) => {
 }
 
 const getSeatCategory = (row, seatNumber) => {
-  if (row === 'A' || row === 'B') {
-    return 'P' // Protokol
-  } else if (row === 'C' || row === 'D') {
-    return '1' // 1. Kategori
+  // E-J sıraları 1. kategori (yeşil), diğer sıralar 2. kategori (mavi)
+  if (row >= 'E' && row <= 'J') {
+    return '1' // 1. Kategori - yeşil
   }
-  return '2' // 2. Kategori
+  return '2' // 2. Kategori - mavi
 }
 
 const getSeatStatus = (row, seatId) => {
@@ -1187,14 +1186,13 @@ const isSeatSelected = (row, seatNumber) => {
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
-                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
                 'category-1': getSeatCategory(seat.row, seat.id) === '1',
                 'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
               @click="handleSeatClick(seat.row, seat.id)"
               :disabled="isSeatDisabled(seat.row, seat.id)"
             >
-              <span class="seat-number">{{ seat.id }}</span>
+              <span class="seat-number">{{ seat.row }}{{ seat.id }}</span>
             </div>
           </div>
         </div>
@@ -1210,14 +1208,13 @@ const isSeatSelected = (row, seatNumber) => {
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
-                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
                 'category-1': getSeatCategory(seat.row, seat.id) === '1',
                 'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
               @click="handleSeatClick(seat.row, seat.id)"
               :disabled="isSeatDisabled(seat.row, seat.id)"
             >
-              <span class="seat-number">{{ seat.id }}</span>
+              <span class="seat-number">{{ seat.row }}{{ seat.id }}</span>
             </div>
           </div>
         </div>
@@ -1236,14 +1233,13 @@ const isSeatSelected = (row, seatNumber) => {
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
-                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
                 'category-1': getSeatCategory(seat.row, seat.id) === '1',
                 'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
               @click="handleSeatClick(seat.row, seat.id)"
               :disabled="isSeatDisabled(seat.row, seat.id)"
             >
-              <span class="seat-number">{{ seat.id }}</span>
+              <span class="seat-number">{{ seat.row }}{{ seat.id }}</span>
             </div>
           </div>
         </div>
@@ -1259,14 +1255,13 @@ const isSeatSelected = (row, seatNumber) => {
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
-                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
                 'category-1': getSeatCategory(seat.row, seat.id) === '1',
                 'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
               @click="handleSeatClick(seat.row, seat.id)"
               :disabled="isSeatDisabled(seat.row, seat.id)"
             >
-              <span class="seat-number">{{ seat.id }}</span>
+              <span class="seat-number">{{ seat.row }}{{ seat.id }}</span>
             </div>
           </div>
         </div>
@@ -1285,14 +1280,13 @@ const isSeatSelected = (row, seatNumber) => {
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
-                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
                 'category-1': getSeatCategory(seat.row, seat.id) === '1',
                 'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
               @click="handleSeatClick(seat.row, seat.id)"
               :disabled="isSeatDisabled(seat.row, seat.id)"
             >
-              <span class="seat-number">{{ seat.id }}</span>
+              <span class="seat-number">{{ seat.row }}{{ seat.id }}</span>
             </div>
           </div>
         </div>
@@ -1308,14 +1302,13 @@ const isSeatSelected = (row, seatNumber) => {
                 'approved': getSeatStatus(seat.row, seat.id) === 'approved',
                 'rejected': getSeatStatus(seat.row, seat.id) === 'rejected',
                 'selected': isSeatSelected(seat.row, seat.id),
-                'protokol': getSeatCategory(seat.row, seat.id) === 'P',
                 'category-1': getSeatCategory(seat.row, seat.id) === '1',
                 'category-2': getSeatCategory(seat.row, seat.id) === '2'
               }"
               @click="handleSeatClick(seat.row, seat.id)"
               :disabled="isSeatDisabled(seat.row, seat.id)"
             >
-              <span class="seat-number">{{ seat.id }}</span>
+              <span class="seat-number">{{ seat.row }}{{ seat.id }}</span>
             </div>
           </div>
         </div>
@@ -1394,82 +1387,112 @@ const isSeatSelected = (row, seatNumber) => {
 }
 
 .seat {
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 6px;
+  border: 2px solid #ccc;
+  border-radius: 8px 8px 0 0;
   cursor: pointer;
-  background: linear-gradient(145deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #fff;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: visible;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10), 0 1.5px 3px rgba(44, 62, 80, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 2px;
+}
+
+.seat::before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #ddd;
+  border-radius: 0 0 4px 4px;
 }
 
 .seat-number {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  color: #34495e;
-  letter-spacing: 0.01em;
-  text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
+  color: #333;
+  letter-spacing: -0.02em;
 }
 
 .seat:hover:not(.reserved):not(.approved):not(.pending) {
-  transform: translateY(-4px) scale(1.08);
-  border: none;
-  background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
-  box-shadow: 0 6px 16px rgba(52, 152, 219, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);
+  transform: perspective(100px) rotateX(10deg) translateY(-2px);
+  border-color: #1976d2;
+  background: #f5f9ff;
 }
 
-.seat:hover:not(.reserved):not(.approved):not(.pending) .seat-number {
-  color: #1976d2;
-  text-shadow: 0 1px 2px #fff, 0 0.5px 0.5px #b0b0b0;
+.seat.selected {
+  background: #1976d2;
+  color: white;
+}
+
+.seat.selected::before {
+  background: #1565c0;
+}
+
+.seat.selected .seat-number {
+  color: #fff;
+}
+
+.seat.approved {
+  background: #4caf50;
+  color: white;
+}
+
+.seat.approved::before {
+  background: #388e3c;
+}
+
+.seat.approved .seat-number {
+  color: #fff;
+}
+
+.seat.pending {
+  background: #ff9800; /* Turuncu renk */
+  border-color: #f57c00;
+  color: white;
+  cursor: not-allowed;
+}
+
+.seat.pending:hover {
+  transform: none;
+  background: #ff9800;
+  cursor: not-allowed;
+}
+
+.seat.pending .seat-number {
+  color: white;
 }
 
 .seat.reserved {
+  background: #ff9800; /* Turuncu renk */
+  border-color: #f57c00;
+  color: white;
   cursor: not-allowed;
-  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
-  color: #fff;
-  box-shadow: none;
-  opacity: 0.8;
 }
 
 .seat.reserved:hover {
   transform: none;
-  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
+  background: #ff9800;
   cursor: not-allowed;
 }
 
 .seat.reserved .seat-number {
-  color: #fff !important;
-  text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
-}
-
-.seat.selected {
-  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%) !important;
-  border: none !important;
-  color: #fff !important;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25);
-}
-
-.seat.selected .seat-number {
-  color: #fff !important;
-  text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
-}
-
-.seat.protokol {
-  border-color: #e74c3c;
+  color: white;
 }
 
 .seat.category-1 {
-  border-color: #3498db;
+  border: 2px solid #4caf50; /* Yeşil border */
 }
 
 .seat.category-2 {
-  border-color: #2ecc71;
+  border: 2px solid #2196f3; /* Mavi border */
 }
 
 .seat.approved {
@@ -1502,25 +1525,6 @@ const isSeatSelected = (row, seatNumber) => {
   transform: translateY(-4px) scale(1.08);
   background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
   box-shadow: 0 6px 16px rgba(52, 152, 219, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);
-}
-
-.seat.pending {
-  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
-  color: #fff;
-  cursor: not-allowed;
-  box-shadow: none;
-  opacity: 0.8;
-}
-
-.seat.pending:hover {
-  transform: none;
-  background: linear-gradient(145deg, #1976d2 0%, #64b5f6 100%);
-  cursor: not-allowed;
-}
-
-.seat.pending .seat-number {
-  color: #fff;
-  text-shadow: 0 1px 2px #1976d2, 0 0.5px 0.5px #fff;
 }
 
 /* Tablet ve mobil için responsive tasarım */
