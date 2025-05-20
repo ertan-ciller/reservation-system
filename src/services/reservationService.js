@@ -256,5 +256,98 @@ export const reservationService = {
         error: 'Firebase bağlantısı test edilirken bir hata oluştu: ' + error.message 
       };
     }
+  },
+
+  // Tek bir koltuğu onayla
+  async approveSingleSeat(reservationId, seatId) {
+    try {
+      const reservationRef = doc(db, 'reservations', reservationId);
+      const reservationDoc = await getDoc(reservationRef);
+      
+      if (!reservationDoc.exists()) {
+        throw new Error('Rezervasyon bulunamadı');
+      }
+
+      const reservationData = reservationDoc.data();
+      
+      // Koltuğu güncelle
+      const seatRef = doc(db, 'seats', `${reservationData.showDate}_${seatId}`);
+      await setDoc(seatRef, {
+        status: 'approved',
+        showDate: reservationData.showDate,
+        reservedAt: serverTimestamp(),
+        reservationId: reservationId
+      });
+
+      // Rezervasyonun koltuk durumlarını güncelle
+      const seatStatuses = reservationData.seatStatuses || {};
+      seatStatuses[seatId] = 'approved';
+
+      await updateDoc(reservationRef, {
+        seatStatuses: seatStatuses
+      });
+
+      // Tüm koltuklar onaylandıysa rezervasyonu onayla
+      const allSeatsApproved = reservationData.seatIds.every(seat => {
+        const fullSeatId = `${seat.row}-${seat.id}`;
+        return seatStatuses[fullSeatId] === 'approved';
+      });
+
+      if (allSeatsApproved) {
+        await updateDoc(reservationRef, {
+          status: 'approved',
+          approvedAt: serverTimestamp()
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Koltuk onaylama hatası:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Tek bir koltuğu reddet
+  async rejectSingleSeat(reservationId, seatId) {
+    try {
+      const reservationRef = doc(db, 'reservations', reservationId);
+      const reservationDoc = await getDoc(reservationRef);
+      
+      if (!reservationDoc.exists()) {
+        throw new Error('Rezervasyon bulunamadı');
+      }
+
+      const reservationData = reservationDoc.data();
+      
+      // Koltuğu sil (available durumuna getir)
+      const seatRef = doc(db, 'seats', `${reservationData.showDate}_${seatId}`);
+      await deleteDoc(seatRef);
+
+      // Rezervasyonun koltuk durumlarını güncelle
+      const seatStatuses = reservationData.seatStatuses || {};
+      seatStatuses[seatId] = 'rejected';
+
+      await updateDoc(reservationRef, {
+        seatStatuses: seatStatuses
+      });
+
+      // Tüm koltuklar reddedildiyse rezervasyonu reddet
+      const allSeatsRejected = reservationData.seatIds.every(seat => {
+        const fullSeatId = `${seat.row}-${seat.id}`;
+        return seatStatuses[fullSeatId] === 'rejected';
+      });
+
+      if (allSeatsRejected) {
+        await updateDoc(reservationRef, {
+          status: 'rejected',
+          rejectedAt: serverTimestamp()
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Koltuk reddetme hatası:', error);
+      return { success: false, error: error.message };
+    }
   }
 }; 

@@ -76,6 +76,42 @@ const handleReject = async (reservationId) => {
   }
 }
 
+// Tek bir koltuğu onayla
+const handleApproveSeat = async (reservationId, seatId) => {
+  try {
+    await reservationService.approveSingleSeat(reservationId, seatId)
+  } catch (e) {
+    console.error('Koltuk onaylama hatası:', e)
+  }
+}
+
+// Tek bir koltuğu reddet
+const handleRejectSeat = async (reservationId, seatId) => {
+  try {
+    await reservationService.rejectSingleSeat(reservationId, seatId)
+  } catch (e) {
+    console.error('Koltuk reddetme hatası:', e)
+  }
+}
+
+// Koltuk durumunu kontrol et
+const getSeatStatus = (reservation, seatId) => {
+  if (!reservation.seatStatuses) return 'pending'
+  return reservation.seatStatuses[seatId] || 'pending'
+}
+
+// Koltuk durum sınıfını al
+const getSeatStatusClass = (status) => {
+  switch (status) {
+    case 'approved':
+      return 'seat-approved'
+    case 'rejected':
+      return 'seat-rejected'
+    default:
+      return 'seat-pending'
+  }
+}
+
 // Filtrelenmiş rezervasyonlar
 const filteredReservations = computed(() => {
   if (!searchQuery.value) return reservations.value
@@ -120,27 +156,57 @@ const formatDate = (date, type = 'full') => {
   return new Date(date).toLocaleString('tr-TR', options)
 }
 
-// Durum etiketi rengi
-const getStatusClass = (status) => {
-  switch (status) {
-    case 'approved':
-      return 'approved'
-    case 'rejected':
-      return 'rejected'
-    default:
-      return 'pending'
-  }
+// Bekleyen koltukları kontrol et
+const hasPendingSeats = (reservation) => {
+  if (!reservation.seatStatuses) return true;
+  return reservation.seatIds.some(seat => {
+    const fullSeatId = `${seat.row}-${seat.id}`;
+    return !reservation.seatStatuses[fullSeatId] || reservation.seatStatuses[fullSeatId] === 'pending';
+  });
+}
+
+// Rezervasyon durumunu hesapla
+const calculateReservationStatus = (reservation) => {
+  if (!reservation.seatStatuses) return reservation.status;
+
+  const statuses = reservation.seatIds.map(seat => {
+    const fullSeatId = `${seat.row}-${seat.id}`;
+    return reservation.seatStatuses[fullSeatId];
+  });
+
+  if (statuses.every(status => status === 'approved')) return 'approved';
+  if (statuses.every(status => status === 'rejected')) return 'rejected';
+  if (statuses.some(status => !status || status === 'pending')) return 'pending';
+  
+  // Karışık durum (bazı koltuklar onaylanmış, bazıları reddedilmiş)
+  return 'mixed';
 }
 
 // Durum metni
 const getStatusText = (status) => {
   switch (status) {
     case 'approved':
-      return 'ONAYLANDI'
+      return 'ONAYLANDI';
     case 'rejected':
-      return 'REDDEDİLDİ'
+      return 'REDDEDİLDİ';
+    case 'mixed':
+      return 'KISMEN ONAYLANDI';
     default:
-      return 'Bekliyor'
+      return 'BEKLİYOR';
+  }
+}
+
+// Durum etiketi rengi
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'approved':
+      return 'approved';
+    case 'rejected':
+      return 'rejected';
+    case 'mixed':
+      return 'mixed';
+    default:
+      return 'pending';
   }
 }
 
@@ -205,34 +271,55 @@ const formatSeatIds = (seatIds) => {
               <td class="name-cell">{{ reservation.firstName }} {{ reservation.lastName }}</td>
               <td>{{ reservation.phoneNumber }}</td>
               <td class="seat-cell">
-                <div class="seat-list">
-                  {{ formatSeatIds(reservation.seatIds) }}
+                <div class="seat-management">
+                  <div v-for="seat in reservation.seatIds" :key="seat.id" 
+                       class="seat-item" 
+                       :class="getSeatStatusClass(getSeatStatus(reservation, `${seat.row}-${seat.id}`))">
+                    <span class="seat-number">{{ seat.row }}-{{ seat.id }}</span>
+                    <div class="seat-actions" v-if="getSeatStatus(reservation, `${seat.row}-${seat.id}`) === 'pending'">
+                      <button 
+                        @click="handleApproveSeat(reservation.id, `${seat.row}-${seat.id}`)"
+                        class="seat-action approve"
+                        title="Koltuğu Onayla">
+                        ✓
+                      </button>
+                      <button 
+                        @click="handleRejectSeat(reservation.id, `${seat.row}-${seat.id}`)"
+                        class="seat-action reject"
+                        title="Koltuğu Reddet">
+                        ✕
+                      </button>
+                    </div>
+                    <span v-else class="seat-status">
+                      {{ getSeatStatus(reservation, `${seat.row}-${seat.id}`) === 'approved' ? '✓' : '✕' }}
+                    </span>
+                  </div>
                 </div>
               </td>
               <td class="show-date">{{ formatDate(reservation.showDate, 'show') }}</td>
               <td>
-                <span :class="['status', getStatusClass(reservation.status)]">
-                  {{ getStatusText(reservation.status) }}
+                <span :class="['status', getStatusClass(calculateReservationStatus(reservation))]">
+                  {{ getStatusText(calculateReservationStatus(reservation)) }}
                 </span>
               </td>
               <td class="actions">
-                <div class="action-buttons" v-if="reservation.status === 'pending'">
+                <div class="action-buttons" v-if="hasPendingSeats(reservation)">
                   <button
                     @click="handleApprove(reservation.id)"
                     class="action-btn approve"
                   >
-                    Onayla
+                    Tümünü Onayla
                   </button>
                   <button
                     @click="handleReject(reservation.id)"
                     class="action-btn reject"
                   >
-                    Reddet
+                    Tümünü Reddet
                   </button>
                 </div>
-                <div v-else>
-                  <span class="approved-text">
-                    {{ reservation.status === 'approved' ? 'İşlem Tamamlandı' : 'Rezervasyon Reddedildi' }}
+                <div v-else class="status-text">
+                  <span :class="calculateReservationStatus(reservation) === 'approved' ? 'approved-text' : 'rejected-text'">
+                    {{ getStatusText(calculateReservationStatus(reservation)) }}
                   </span>
                 </div>
               </td>
@@ -334,44 +421,12 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   color: #2c3e50;
-  table-layout: fixed;
 }
 
 th, td {
-  padding: 1.25rem 1rem;
+  padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-th:nth-child(1) {
-  width: 15%;
-}
-
-th:nth-child(2) {
-  width: 15%;
-}
-
-th:nth-child(3) {
-  width: 12%;
-}
-
-th:nth-child(4) {
-  width: 18%;
-}
-
-th:nth-child(5) {
-  width: 15%;
-}
-
-th:nth-child(6) {
-  width: 10%;
-}
-
-th:nth-child(7) {
-  width: 15%;
 }
 
 th {
@@ -381,10 +436,140 @@ th {
   text-transform: uppercase;
   font-size: 0.85rem;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
-tr:last-child td {
-  border-bottom: none;
+/* Kolon genişlikleri */
+th:nth-child(1) { width: 12%; } /* Tarih */
+th:nth-child(2) { width: 15%; } /* Ad Soyad */
+th:nth-child(3) { width: 10%; } /* Telefon */
+th:nth-child(4) { width: 20%; } /* Koltuklar */
+th:nth-child(5) { width: 12%; } /* Gösterim Tarihi */
+th:nth-child(6) { width: 11%; } /* Durum */
+th:nth-child(7) { width: 20%; } /* İşlemler */
+
+.actions {
+  width: 20%;
+  padding: 0.5rem;
+  text-align: right;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 40px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #fff;
+  min-width: 130px;
+  height: 36px;
+}
+
+.action-btn.approve {
+  background-color: #22c55e;
+}
+
+.action-btn.approve:hover {
+  background-color: #16a34a;
+}
+
+.action-btn.reject {
+  background-color: #ef4444;
+}
+
+.action-btn.reject:hover {
+  background-color: #dc2626;
+}
+
+.status-text {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 40px;
+}
+
+.approved-text, .rejected-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  min-width: 140px;
+  height: 36px;
+}
+
+.approved-text {
+  color: #166534;
+  background-color: #dcfce7;
+}
+
+.rejected-text {
+  color: #dc2626;
+  background-color: #fee2e2;
+}
+
+@media (max-width: 1200px) {
+  .action-btn {
+    min-width: 110px;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .approved-text, .rejected-text {
+    min-width: 120px;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+@media (max-width: 992px) {
+  th:nth-child(1) { width: 15%; }
+  th:nth-child(2) { width: 15%; }
+  th:nth-child(3) { width: 12%; }
+  th:nth-child(4) { width: 18%; }
+  th:nth-child(5) { width: 12%; }
+  th:nth-child(6) { width: 10%; }
+  th:nth-child(7) { width: 18%; }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-responsive {
+    margin: 0 -1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 900px;
+  }
+
+  th, td {
+    padding: 0.75rem 0.5rem;
+  }
 }
 
 .name-cell {
@@ -434,51 +619,14 @@ tr:last-child td {
   color: #92400e;
 }
 
-.actions {
-  width: 100%;
-  min-height: 38px;
+.status.mixed {
+  background: #fef9c3;
+  color: #854d0e;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  min-height: 38px;
-  width: 100%;
-}
-
-.action-btn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  color: #fff;
-}
-
-.approve {
-  background-color: #22c55e;
-}
-
-.approve:hover {
-  background-color: #16a34a;
-}
-
-.reject {
-  background-color: #ef4444;
-}
-
-.reject:hover {
-  background-color: #dc2626;
-}
-
-.approved-text {
-  display: inline-block;
-  color: #166534;
-  font-size: 0.85rem;
-  font-weight: 500;
-  padding: 4px 8px;
+.mixed-text {
+  color: #854d0e;
+  background-color: #fef9c3;
 }
 
 .loading, .error, .no-results {
@@ -534,47 +682,6 @@ tr:last-child td {
   }
 }
 
-@media (max-width: 768px) {
-  .table-responsive {
-    margin: 0 -1rem;
-    border-radius: 0;
-  }
-
-  table {
-    font-size: 0.9rem;
-  }
-
-  th, td {
-    padding: 0.75rem;
-  }
-
-  .action-buttons {
-    flex-direction: row;
-    gap: 0.5rem;
-  }
-
-  .action-btn {
-    flex: 1;
-    padding: 6px 12px;
-    font-size: 0.875rem;
-  }
-
-  .status {
-    padding: 3px 8px;
-    font-size: 0.7rem;
-  }
-
-  .seat-list {
-    flex-direction: column;
-    gap: 2px;
-  }
-  
-  .seat-tag {
-    display: inline-block;
-    margin: 1px 0;
-  }
-}
-
 @media (max-width: 480px) {
   .header {
     margin: -1rem -1rem 1rem -1rem;
@@ -621,18 +728,86 @@ tr:last-child td {
   }
 }
 
-.seat-list {
-  display: inline;
-  color: #1e40af;
+.seat-management {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.seat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.seat-number {
   font-weight: 500;
 }
 
-.seat-tag {
-  background: #e3f2fd;
-  color: #1976d2;
-  padding: 2px 6px;
+.seat-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.seat-action {
+  border: none;
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.seat-action.approve {
+  background-color: #22c55e;
+}
+
+.seat-action.approve:hover {
+  background-color: #16a34a;
+}
+
+.seat-action.reject {
+  background-color: #ef4444;
+}
+
+.seat-action.reject:hover {
+  background-color: #dc2626;
+}
+
+.seat-status {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.seat-approved {
+  background-color: #dcfce7;
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.seat-rejected {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.seat-pending {
+  background-color: #fef3c7;
+  border-color: #92400e;
+  color: #92400e;
 }
 </style> 
