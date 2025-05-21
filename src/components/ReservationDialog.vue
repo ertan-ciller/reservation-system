@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { toastService } from '../services/toastService'
 
 const props = defineProps({
@@ -22,6 +22,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'submit'])
+
+const totalPrice = computed(() => {
+  return props.selectedSeats.reduce((total, seat) => {
+    // Koltuk kategorisine göre fiyat belirleme
+    let price = 150 // 2. Kategori fiyatı
+    if (seat.category === '1') {
+      price = 300 // 1. Kategori fiyatı
+    }
+    return total + price
+  }, 0)
+})
 
 const formData = ref({
   firstName: '',
@@ -114,7 +125,7 @@ const handleSubmit = async () => {
           </li>
         </ul>
         <p class="total-price">
-          Toplam Tutar: <span class="price">{{ selectedSeats.length * 100 }}₺</span>
+          Toplam Tutar: <span class="price">{{ totalPrice }}₺</span>
         </p>
       </div>
 
