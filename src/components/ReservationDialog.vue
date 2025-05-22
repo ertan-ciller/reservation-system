@@ -2,6 +2,48 @@
 import { ref, computed } from 'vue'
 import { toastService } from '../services/toastService'
 
+const privacyPolicyText = `
+<div class="privacy-policy-content">
+  <h3>KİŞİSEL VERİLERİN İŞLENMESİNE İLİŞKİN AYDINLATMA METNİ</h3>
+  
+  <p>İşbu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu sıfatıyla, tarafımızca gerçekleştirilen kişisel veri işleme faaliyetlerine ilişkin olarak sizi bilgilendirmek amacıyla hazırlanmıştır.</p>
+
+  <p>1. Veri Sorumlusu<br>
+  Kişisel verileriniz, etkinlik rezervasyon sistemimiz kapsamında, veri sorumlusu olarak tarafımızca işlenmektedir.</p>
+
+  <p>2. İşlenen Kişisel Veriler<br>
+  Rezervasyon işlemi sırasında ad, soyad ve telefon numarası bilgileriniz alınmaktadır.</p>
+
+  <p>3. Kişisel Verilerin İşlenme Amacı<br>
+  Toplanan kişisel verileriniz aşağıdaki amaçlarla işlenmektedir:</p>
+  <ul>
+    <li>Rezervasyon işlemlerinin gerçekleştirilmesi,</li>
+    <li>Rezervasyonun tamamlanmaması durumunda sizinle iletişime geçilmesi.</li>
+  </ul>
+
+  <p>4. Kişisel Verilerin Aktarımı<br>
+  Kişisel verileriniz, yukarıda belirtilen amaçlar dışında üçüncü kişilerle paylaşılmamaktadır.</p>
+
+  <p>5. Kişisel Veri Toplamanın Yöntemi ve Hukuki Sebebi<br>
+  Kişisel verileriniz, internet sitemiz üzerinden doğrudan sizden alınmak suretiyle elektronik ortamda toplanmaktadır. KVKK'nın 5/2-c maddesi uyarınca, bir sözleşmenin kurulması veya ifasıyla doğrudan doğruya ilgili olması kaydıyla, veri işlemenin gerekli olması hukuki sebebine dayalı olarak işlenmektedir.</p>
+
+  <p>6. Veri Sahibi Olarak Haklarınız<br>
+  KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:</p>
+  <ul>
+    <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme,</li>
+    <li>Kişisel verileriniz işlenmişse buna ilişkin bilgi talep etme,</li>
+    <li>Kişisel verilerinizin işlenme amacını ve bunların amacına uygun kullanılıp kullanılmadığını öğrenme,</li>
+    <li>Yurt içinde veya yurt dışında kişisel verilerinizin aktarıldığı üçüncü kişileri bilme,</li>
+    <li>Kişisel verilerinizin eksik veya yanlış işlenmiş olması hâlinde bunların düzeltilmesini isteme,</li>
+    <li>KVKK'ya uygun olarak silinmesini veya yok edilmesini isteme,</li>
+    <li>Düzeltme, silme ve yok edilme işlemlerinin, verilerin aktarıldığı üçüncü kişilere bildirilmesini isteme,</li>
+    <li>İşlenen verilerin münhasıran otomatik sistemler vasıtasıyla analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme,</li>
+    <li>Kişisel verilerinizin kanuna aykırı olarak işlenmesi sebebiyle zarara uğramanız hâlinde zararın giderilmesini talep etme.</li>
+  </ul>
+  <p>Bu haklarınızı kullanmak için bizimle [email veya iletişim adresi] üzerinden iletişime geçebilirsiniz.</p>
+</div>
+`
+
 const props = defineProps({
   selectedSeats: {
     type: Array,
@@ -94,7 +136,6 @@ const handleSubmit = async () => {
       await emit('submit', reservationData)
       formData.value = { firstName: '', lastName: '', phone: '' }
       toastService.success('Rezervasyonunuz başarıyla oluşturuldu!')
-      // Rezerve edilen koltukları güncelle
       props.reservedSeats.push(...reservationData.seatIds)
       emit('close')
     } catch (error) {
@@ -115,61 +156,74 @@ const handleSubmit = async () => {
 
       <div class="selected-seats-info">
         <h3>Seçilen Koltuklar:</h3>
-        <ul class="selected-seats-list">
-          <li v-for="seat in selectedSeats" 
-              :key="seat.seatFullId"
-              :class="{ 'reserved': reservedSeats.some(reserved => 
-                reserved.id === seat.seatNumber && reserved.row === seat.rowLabel
-              )}">
-            {{ seat.rowLabel }} - {{ seat.seatNumber }}
-          </li>
-        </ul>
-        <p class="total-price">
-          Toplam Tutar: <span class="price">{{ totalPrice }}₺</span>
-        </p>
+        <div class="seats-container">
+          <div class="seats-list">
+            <span v-for="seat in selectedSeats" 
+                :key="seat.seatFullId"
+                class="seat-tag"
+                :class="{ 'reserved': reservedSeats.some(reserved => 
+                  reserved.id === seat.seatNumber && reserved.row === seat.rowLabel
+                )}">
+              {{ seat.rowLabel }} - {{ seat.seatNumber }}
+            </span>
+          </div>
+          <div class="total-price">
+            Toplam Tutar: <span class="price">{{ totalPrice }}₺</span>
+          </div>
+        </div>
       </div>
 
       <form @submit.prevent="handleSubmit" class="reservation-form">
-        <div class="form-group">
-          <label for="firstName">Ad</label>
-          <input
-            id="firstName"
-            v-model="formData.firstName"
-            type="text"
-            :class="{ 'error': errors.firstName }"
-          />
-          <span class="error-message" v-if="errors.firstName">{{ errors.firstName }}</span>
+        <div class="form-fields">
+          <div class="form-group">
+            <label for="firstName">Ad</label>
+            <input
+              id="firstName"
+              v-model="formData.firstName"
+              type="text"
+              placeholder="Adınız"
+              :class="{ 'error': errors.firstName }"
+            />
+            <span class="error-message" v-if="errors.firstName">{{ errors.firstName }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Soyad</label>
+            <input
+              id="lastName"
+              v-model="formData.lastName"
+              type="text"
+              placeholder="Soyadınız"
+              :class="{ 'error': errors.lastName }"
+            />
+            <span class="error-message" v-if="errors.lastName">{{ errors.lastName }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Telefon</label>
+            <input
+              id="phone"
+              v-model="formData.phone"
+              type="tel"
+              placeholder="5XXXXXXXXX"
+              maxlength="10"
+              :class="{ 'error': errors.phone }"
+            />
+            <span class="error-message" v-if="errors.phone">{{ errors.phone }}</span>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="lastName">Soyad</label>
-          <input
-            id="lastName"
-            v-model="formData.lastName"
-            type="text"
-            :class="{ 'error': errors.lastName }"
-          />
-          <span class="error-message" v-if="errors.lastName">{{ errors.lastName }}</span>
+        <div class="privacy-policy">
+          <div class="policy-content" v-html="privacyPolicyText"></div>
         </div>
 
-        <div class="form-group">
-          <label for="phone">Telefon (5XXXXXXXXX)</label>
-          <input
-            id="phone"
-            v-model="formData.phone"
-            type="tel"
-            maxlength="10"
-            :class="{ 'error': errors.phone }"
-          />
-          <span class="error-message" v-if="errors.phone">{{ errors.phone }}</span>
+        <div class="form-footer">
+          <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
+          <div class="success-message" v-if="successMessage">{{ successMessage }}</div>
+          <button type="submit" class="submit-button" :disabled="isLoading">
+            {{ isLoading ? 'İşleniyor...' : 'Rezervasyon Yap' }}
+          </button>
         </div>
-
-        <div class="error-message" v-if="errorMessage">{{ errorMessage }}</div>
-        <div class="success-message" v-if="successMessage">{{ successMessage }}</div>
-
-        <button type="submit" class="submit-button" :disabled="isLoading">
-          {{ isLoading ? 'İşleniyor...' : 'Rezervasyon Yap' }}
-        </button>
       </form>
     </div>
   </div>
@@ -187,34 +241,33 @@ const handleSubmit = async () => {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .dialog {
   background-color: white;
-  border-radius: 16px;
-  padding: 2rem;
+  border-radius: 12px;
   width: 90%;
-  max-width: 500px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .dialog-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
 }
 
 .dialog-header h2 {
   margin: 0;
-  font-size: 1.5rem;
-  color: #2c3e50;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
 }
 
 .close-button {
@@ -222,58 +275,70 @@ const handleSubmit = async () => {
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
+  color: #4a5568;
   padding: 0.5rem;
+  margin: -0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: #f7fafc;
 }
 
 .selected-seats-info {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: #f7fafc;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .selected-seats-info h3 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.75rem 0;
   font-size: 1rem;
-  color: #2c3e50;
+  color: #2d3748;
 }
 
-.selected-seats-list {
+.seats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.seats-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 0;
-  margin: 0 0 1rem 0;
-  list-style: none;
 }
 
-.selected-seats-list li {
+.seat-tag {
   background-color: #edf2f7;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
   color: #2d3748;
   font-weight: 500;
 }
 
-.selected-seats-list li.reserved {
-  background-color: #3182ce;
-  color: white;
-}
-
 .total-price {
-  margin: 0;
-  font-weight: 600;
-  color: #2c3e50;
+  font-size: 1rem;
+  color: #2d3748;
+  font-weight: 500;
 }
 
 .price {
   color: #3182ce;
+  font-weight: 600;
 }
 
 .reservation-form {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+}
+
+.form-fields {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -282,58 +347,105 @@ const handleSubmit = async () => {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .form-group label {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4a5568;
 }
 
 .form-group input {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color: #f0f4f8;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
   color: #2d3748;
+  background-color: white;
+  transition: all 0.2s;
+}
+
+.form-group input::placeholder {
+  color: #a0aec0;
 }
 
 .form-group input:focus {
-  border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
   outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
 }
 
 .form-group input.error {
-  border-color: #dc3545;
+  border-color: #e53e3e;
 }
 
 .error-message {
-  color: #dc3545;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  color: #e53e3e;
 }
 
-.success-message {
-  color: #28a745;
-  font-size: 0.9rem;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  background-color: #d4edda;
-  border-radius: 4px;
-  text-align: center;
+.privacy-policy {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.policy-content {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #4a5568;
+  text-align: left;
+}
+
+.policy-content :deep(h3) {
+  color: #1a202c;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  text-align: left;
+}
+
+.policy-content :deep(p) {
+  margin: 0.75rem 0;
+}
+
+.policy-content :deep(ul) {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.policy-content :deep(li) {
+  padding-left: 1rem;
+  position: relative;
+  margin: 0.25rem 0;
+}
+
+.policy-content :deep(li)::before {
+  content: "-";
+  position: absolute;
+  left: 0;
+}
+
+.form-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .submit-button {
-  margin-top: 1rem;
+  width: 100%;
   padding: 0.75rem;
   background-color: #3182ce;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -348,16 +460,25 @@ const handleSubmit = async () => {
 }
 
 @media (max-width: 480px) {
+  .dialog-overlay {
+    padding: 0;
+  }
+
   .dialog {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .dialog-header,
+  .selected-seats-info,
+  .reservation-form {
     padding: 1rem;
   }
-  
-  .dialog-header h2 {
-    font-size: 1.25rem;
-  }
-  
+
   .form-group input {
-    padding: 0.5rem;
+    font-size: 1rem;
+    padding: 0.75rem;
   }
 }
 </style> 
