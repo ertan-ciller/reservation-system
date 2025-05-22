@@ -1401,6 +1401,7 @@ const isSeatSelected = (row, seatNumber) => {
   overflow: visible;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin: 2px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .seat::before {
@@ -1428,8 +1429,9 @@ const isSeatSelected = (row, seatNumber) => {
 }
 
 .seat.selected {
-  background: #1976d2;
-  color: white;
+  background: #1976d2 !important;
+  border-color: #1565c0 !important;
+  color: white !important;
 }
 
 .seat.selected::before {
@@ -1437,7 +1439,13 @@ const isSeatSelected = (row, seatNumber) => {
 }
 
 .seat.selected .seat-number {
-  color: #fff;
+  color: #fff !important;
+}
+
+.seat.selected:active,
+.seat.selected:focus {
+  background: #1976d2 !important;
+  border-color: #1565c0 !important;
 }
 
 .seat.approved {
@@ -1577,6 +1585,26 @@ const isSeatSelected = (row, seatNumber) => {
 
   .section-group.right {
     transform: translateX(-0.75rem);
+  }
+
+  .seat {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .seat.selected {
+    background: #1976d2 !important;
+    border-color: #1565c0 !important;
+    color: white !important;
+  }
+
+  .seat.selected .seat-number {
+    color: #fff !important;
+  }
+
+  .seat:active {
+    background-color: inherit;
   }
 }
 </style> 
