@@ -197,6 +197,23 @@ watch(selectedDate, () => {
               </svg>
             </button>
           </div>
+          <div class="seat-status-list">
+            <div class="seat-status-title">Koltuk Durumları</div>
+            <div class="seat-status-items">
+              <div class="seat-status-item">
+                <div class="status-indicator status-blue"></div>
+                <span>Seçili Koltuklar</span>
+              </div>
+              <div class="seat-status-item">
+                <div class="status-indicator status-orange"></div>
+                <span>Onay Bekleyen</span>
+              </div>
+              <div class="seat-status-item">
+                <div class="status-indicator status-green"></div>
+                <span>Onaylanmış</span>
+              </div>
+            </div>
+          </div>
           <div class="price-list">
             <div class="price-item">
               <div class="category-indicator">
@@ -391,7 +408,66 @@ main {
 }
 
 .selected-seats-container.collapsed {
-  transform: translateY(calc(100% - 120px));
+  transform: translateY(calc(100% - 200px));
+}
+
+.selected-seats-container.collapsed .selected-seats-section {
+  display: none;
+}
+
+.selected-seats-container.collapsed .seat-status-list {
+  display: none;
+}
+
+.selected-seats-container.collapsed .selected-seats-footer {
+  display: none;
+}
+
+.seat-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.seat-status-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.seat-status-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.seat-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.status-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.status-blue {
+  background-color: #2196f3;
+}
+
+.status-orange {
+  background-color: #F7B036;
+}
+
+.status-green {
+  background-color: #4caf50;
 }
 
 .prices-header {
@@ -566,6 +642,10 @@ main {
   .selected-seats-container {
     max-height: calc(100vh - 60px);
     overflow-y: auto;
+  }
+
+  .selected-seats-container.collapsed {
+    transform: translateY(calc(100% - 160px));
   }
 
   .price-list {
