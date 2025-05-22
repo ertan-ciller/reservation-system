@@ -253,6 +253,7 @@ const handleSubmit = async () => {
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 .dialog-header {
@@ -335,13 +336,16 @@ const handleSubmit = async () => {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  flex: 1;
   overflow-y: auto;
+  max-height: calc(90vh - 200px); /* Dialog height minus header and selected seats */
 }
 
 .form-fields {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: fit-content;
 }
 
 .form-group {
@@ -389,46 +393,51 @@ const handleSubmit = async () => {
   background-color: #f8fafc;
   border-radius: 8px;
   overflow: hidden;
+  margin: 1rem 0;
+  border: 1px solid #e2e8f0;
+  flex: 1;
+  min-height: 250px;
 }
 
 .policy-content {
-  max-height: 150px;
+  height: 100%;
   overflow-y: auto;
-  padding: 1rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  padding: 1.5rem;
+  font-size: 0.813rem;
+  line-height: 1.6;
   color: #4a5568;
   text-align: left;
 }
 
 .policy-content :deep(h3) {
   color: #1a202c;
-  font-size: 1rem;
+  font-size: 0.938rem;
   font-weight: 600;
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.25rem 0;
   text-align: left;
 }
 
 .policy-content :deep(p) {
-  margin: 0.75rem 0;
+  margin: 0.875rem 0;
 }
 
 .policy-content :deep(ul) {
   list-style: none;
   padding: 0;
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;
 }
 
 .policy-content :deep(li) {
-  padding-left: 1rem;
+  padding-left: 1.125rem;
   position: relative;
-  margin: 0.25rem 0;
+  margin: 0.375rem 0;
 }
 
 .policy-content :deep(li)::before {
-  content: "-";
+  content: "•";
   position: absolute;
   left: 0;
+  color: #3182ce;
 }
 
 .form-footer {
@@ -467,18 +476,58 @@ const handleSubmit = async () => {
   .dialog {
     width: 100%;
     height: 100vh;
+    max-height: 100vh;
     border-radius: 0;
   }
 
-  .dialog-header,
-  .selected-seats-info,
   .reservation-form {
     padding: 1rem;
+    max-height: calc(100vh - 180px); /* Adjust for mobile header height */
+    gap: 1rem;
   }
 
-  .form-group input {
+  .form-fields {
+    gap: 0.875rem;
+  }
+
+  .privacy-policy {
+    margin: 0.75rem 0;
+    min-height: 300px;
+    max-height: 400px;
+  }
+
+  .policy-content {
+    font-size: 0.875rem;
+    padding: 1.25rem;
+    line-height: 1.7;
+  }
+
+  .policy-content :deep(h3) {
     font-size: 1rem;
-    padding: 0.75rem;
+    margin: 0 0 1.25rem 0;
+  }
+
+  .policy-content :deep(p) {
+    margin: 1rem 0;
+  }
+
+  .policy-content :deep(li) {
+    padding-left: 1.25rem;
+    margin: 0.5rem 0;
+  }
+
+  .policy-content :deep(ul) {
+    margin: 0.875rem 0;
+  }
+
+  .form-footer {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    z-index: 10;
   }
 }
 </style> 
