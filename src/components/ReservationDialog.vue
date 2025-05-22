@@ -397,6 +397,8 @@ const handleSubmit = async () => {
   border: 1px solid #e2e8f0;
   flex: 1;
   min-height: 250px;
+  display: flex;
+  flex-direction: column;
 }
 
 .policy-content {
@@ -407,6 +409,25 @@ const handleSubmit = async () => {
   line-height: 1.6;
   color: #4a5568;
   text-align: left;
+  max-height: 250px;
+}
+
+.policy-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.policy-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.policy-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.policy-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 .policy-content :deep(h3) {
@@ -500,6 +521,8 @@ const handleSubmit = async () => {
     font-size: 0.875rem;
     padding: 1.25rem;
     line-height: 1.7;
+    max-height: none;
+    height: auto;
   }
 
   .policy-content :deep(h3) {

@@ -507,6 +507,12 @@ main {
   display: flex;
   align-items: center;
   gap: 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.selected-seat-item:active,
+.selected-seat-item:focus {
+  background: #F7B036;
 }
 
 .remove-seat {
@@ -569,6 +575,8 @@ main {
   .selected-seat-item {
     padding: 4px 10px;
     font-size: 13px;
+    background: #F7B036;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
