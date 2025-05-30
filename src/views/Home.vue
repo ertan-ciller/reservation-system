@@ -15,6 +15,9 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const showSelectedSeats = ref(true)
 const seatMapContainerRef = ref(null)
+const isPointerDown = ref(false)
+const startPosition = ref({ x: 0, y: 0 })
+const scrollPosition = ref({ x: 0, y: 0 })
 
 const totalPrice = computed(() => {
   return selectedSeats.value.reduce((total, seat) => {
@@ -153,8 +156,48 @@ const centerSeatMapScroll = () => {
   })
 }
 
+const handleMouseDown = (e) => {
+  const container = seatMapContainerRef.value
+  if (!container) return
+
+  const startX = e.pageX - container.offsetLeft
+  const startY = e.pageY
+  const scrollLeft = container.scrollLeft
+  const scrollTop = window.pageYOffset
+
+  const handleMouseMove = (e) => {
+    e.preventDefault()
+    const x = e.pageX - container.offsetLeft
+    const y = e.pageY
+    const walkX = (x - startX)
+    const walkY = (y - startY)
+    
+    container.scrollLeft = scrollLeft - walkX
+    window.scrollTo(0, scrollTop - walkY)
+  }
+
+  const handleMouseUp = () => {
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', handleMouseUp)
+  }
+
+  document.addEventListener('mousemove', handleMouseMove)
+  document.addEventListener('mouseup', handleMouseUp)
+}
+
 onMounted(() => {
   centerSeatMapScroll()
+  const container = seatMapContainerRef.value
+  if (container) {
+    container.addEventListener('mousedown', handleMouseDown)
+  }
+})
+
+onUnmounted(() => {
+  const container = seatMapContainerRef.value
+  if (container) {
+    container.removeEventListener('mousedown', handleMouseDown)
+  }
 })
 
 watch(selectedDate, () => {
@@ -173,7 +216,7 @@ watch(selectedDate, () => {
     <div v-if="selectedDate" class="stage-label">SAHNE</div>
     
     <main>
-      <div v-if="selectedDate" class="seat-map-container" ref="seatMapContainerRef">
+      <div v-if="selectedDate" class="seat-map-container" ref="seatMapContainerRef" @mousedown.prevent="handleMouseDown">
         <SeatMap 
           @seat-select="handleSeatSelect" 
           :selected-seats="selectedSeats"
@@ -341,13 +384,18 @@ main {
   justify-content: center;
   align-items: flex-start;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   padding: 1rem 0;
   margin: 0 auto;
   box-sizing: border-box;
-  scroll-snap-type: x mandatory;
+  cursor: grab;
+  user-select: none;
+}
+
+.seat-map-container:active {
+  cursor: grabbing;
 }
 
 :deep(.seat-map) {

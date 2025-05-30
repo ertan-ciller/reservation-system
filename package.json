@@ -12,7 +12,8 @@
     "firebase": "^11.1.0",
     "firebase-admin": "^13.2.0",
     "vue": "^3.3.11",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vuedraggable": "^2.24.3"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.2",
