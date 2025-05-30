@@ -50,7 +50,6 @@ const loadReservedSeats = async () => {
         reserved.push(seatId);
       }
     });
-    
     reservedSeats.value = reserved;
     approvedSeats.value = approved;
     rejectedSeats.value = rejected;
@@ -218,35 +217,58 @@ const generateSeats = (section) => {
     else if (section === sections.centerFront && (currentRowLetter === 'C' || currentRowLetter === 'D' || currentRowLetter === 'E')) {
       // İlk 8 koltuk için çift sayılar (24'ten 38'e)
       for (let i = 0; i < 8; i++) {
+        const id = 24 + (i * 2);
+        // E sırası için 23 numaralı koltuğu atla
+        if (!(currentRowLetter === 'E' && id === 23)) {
+          rowSeats.push({
+            id: id,
+            row: currentRowLetter,
+            seat: i + 1,
+            reserved: false
+          });
+        }
+      }
+      // E sırası için E40 ve E41 koltuklarını ekle
+      if (currentRowLetter === 'E') {
         rowSeats.push({
-          id: 24 + (i * 2),
+          id: 40,
           row: currentRowLetter,
-          seat: i + 1,
+          seat: 9,
           reserved: false
-        })
+        });
+        rowSeats.push({
+          id: 41,
+          row: currentRowLetter,
+          seat: 10,
+          reserved: false
+        });
       }
       // 39 numaralı koltuk
       rowSeats.push({
         id: 39,
         row: currentRowLetter,
-        seat: 9,
+        seat: currentRowLetter === 'E' ? 11 : 9,
         reserved: false
-      })
+      });
       // 37 numaralı koltuk
       rowSeats.push({
         id: 37,
         row: currentRowLetter,
-        seat: 10,
+        seat: currentRowLetter === 'E' ? 12 : 10,
         reserved: false
-      })
+      });
       // Sonraki 7 koltuk için tek sayılar (35'ten 23'e)
       for (let i = 0; i < 7; i++) {
-        rowSeats.push({
-          id: 35 - (i * 2),
-          row: currentRowLetter,
-          seat: i + 11,
-          reserved: false
-        })
+        const id = 35 - (i * 2);
+        // E sırası için 23 numaralı koltuğu atla
+        if (!(currentRowLetter === 'E' && id === 23)) {
+          rowSeats.push({
+            id: id,
+            row: currentRowLetter,
+            seat: currentRowLetter === 'E' ? i + 13 : i + 11,
+            reserved: false
+          });
+        }
       }
     }
     // Orta blok G ve H sıraları için özel numaralandırma
@@ -279,8 +301,8 @@ const generateSeats = (section) => {
     }
     // Orta blok F sırası için özel numaralandırma
     else if (section === sections.centerFront && currentRowLetter === 'F') {
-      // İlk 10 koltuk için çift sayılar (26'dan 44'e)
-      for (let i = 0; i < 10; i++) {
+      // İlk 10 koltuk için çift sayılar (26'dan 42'ye)
+      for (let i = 0; i < 9; i++) {
         rowSeats.push({
           id: 26 + (i * 2),
           row: currentRowLetter,
@@ -288,19 +310,12 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // 45 numaralı koltuk
-      rowSeats.push({
-        id: 45,
-        row: currentRowLetter,
-        seat: 11,
-        reserved: false
-      })
-      // Sonraki 10 koltuk için tek sayılar (43'ten 25'e)
-      for (let i = 0; i < 10; i++) {
+      // Son 10 koltuk için tek sayılar (41'den 25'e)
+      for (let i = 0; i < 9; i++) {
         rowSeats.push({
-          id: 43 - (i * 2),
+          id: 41 - (i * 2),
           row: currentRowLetter,
-          seat: i + 12,
+          seat: i + 10,
           reserved: false
         })
       }
@@ -347,9 +362,9 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // Ortadaki özel sıralı 4 koltuk
-      const middleSeats = [46, 48, 47, 45]
-      for (let i = 0; i < 4; i++) {
+      // Ortadaki özel sıralı 5 koltuk (46, 48, 50, 49, 47, 45)
+      const middleSeats = [46, 48, 50, 49, 47, 45]
+      for (let i = 0; i < 6; i++) {
         rowSeats.push({
           id: middleSeats[i],
           row: currentRowLetter,
@@ -357,22 +372,15 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // Son 8 koltuk için tek sayılar (43'ten 31'e)
+      // Son 7 koltuk için tek sayılar (43'ten 31'e)
       for (let i = 0; i < 7; i++) {
         rowSeats.push({
           id: 43 - (i * 2),
           row: currentRowLetter,
-          seat: i + 13,
+          seat: i + 14,
           reserved: false
         })
       }
-      // Son koltuk 31
-      rowSeats.push({
-        id: 31,
-        row: currentRowLetter,
-        seat: 20,
-        reserved: false
-      })
     }
     // Orta blok L sırası için özel numaralandırma
     else if (section === sections.centerFront && currentRowLetter === 'L') {
@@ -675,24 +683,73 @@ const generateSeats = (section) => {
       }
       // Y sırası için özel numaralandırma
       else if (currentRowLetter === 'Y') {
-        // Sağdan sola 1'den 39'a kadar 20 koltuk
-        for (let i = 0; i < 20; i++) {
+        // İlk 13 koltuk için çift sayılar (42'den 66'ya)
+        for (let i = 0; i < 13; i++) {
           rowSeats.push({
-            id: i * 2 + 1, // 1, 3, 5, ..., 39
+            id: 42 + (i * 2),
             row: currentRowLetter,
-            seat: 20 - i, // Sağdan sola numaralandırma
+            seat: i + 1,
             reserved: false
           })
+        }
+        // Ortadaki özel sıralı 4 koltuk (65, 63, 61, 59)
+        const middleSeats = [65, 63, 61, 59]
+        for (let i = 0; i < 4; i++) {
+          rowSeats.push({
+            id: middleSeats[i],
+            row: currentRowLetter,
+            seat: i + 14, // Koltuk numaralarını bir arttırdık çünkü önceki döngüde bir koltuk daha ekledik
+            reserved: false
+          })
+        }
+        // Son 9 koltuk için tek sayılar (57'den 41'e) - Y37 ve Y39 hariç
+        for (let i = 0; i < 9; i++) {
+          const id = 57 - (i * 2);
+          // Y37 ve Y39'u atla
+          if (id !== 39 && id !== 37) {
+            rowSeats.push({
+              id: id,
+              row: currentRowLetter,
+              seat: i + 18, // Koltuk numaralarını bir arttırdık
+              reserved: false
+            })
+          }
         }
       }
       // Z sırası için özel numaralandırma
       else if (currentRowLetter === 'Z') {
-        // Sağdan sola 1'den 35'e kadar 18 koltuk
-        for (let i = 0; i < 18; i++) {
+        // İlk 12 koltuk için çift sayılar (38'den 60'a)
+        for (let i = 0; i < 12; i++) {
           rowSeats.push({
-            id: i * 2 + 1, // 1, 3, 5, ..., 35
+            id: 38 + (i * 2),
             row: currentRowLetter,
-            seat: 18 - i, // Sağdan sola numaralandırma
+            seat: i + 1,
+            reserved: false
+          })
+        }
+        // T61 ekle
+        rowSeats.push({
+          id: 61,
+          row: currentRowLetter,
+          seat: 13,
+          reserved: false
+        })
+        // Ortadaki özel sıralı 4 koltuk (59, 57, 55)
+        const middleSeats = [59, 57, 55]
+        for (let i = 0; i < 3; i++) {
+          rowSeats.push({
+            id: middleSeats[i],
+            row: currentRowLetter,
+            seat: i + 14,
+            reserved: false
+          })
+        }
+        // Son 9 koltuk için tek sayılar (53'ten 37'ye)
+        for (let i = 0; i < 9; i++) {
+          rowSeats.push({
+            id: 53 - (i * 2),
+            row: currentRowLetter,
+            seat: i + 17,
             reserved: false
           })
         }
@@ -877,9 +934,9 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // Ortadaki özel sıralı 4 koltuk (49, 47, 45, 43)
-      const middleSeats = [49, 47, 45, 43]
-      for (let i = 0; i < 4; i++) {
+      // Ortadaki özel sıralı 4 koltuk (47, 45, 43)
+      const middleSeats = currentRowLetter === 'N' ? [47, 45, 43] : [49, 47, 45, 43]
+      for (let i = 0; i < (currentRowLetter === 'N' ? 3 : 4); i++) {
         rowSeats.push({
           id: middleSeats[i],
           row: currentRowLetter,
@@ -892,7 +949,7 @@ const generateSeats = (section) => {
         rowSeats.push({
           id: 41 - (i * 2),
           row: currentRowLetter,
-          seat: i + 16,
+          seat: currentRowLetter === 'N' ? i + 15 : i + 16,
           reserved: false
         })
       }
@@ -908,13 +965,22 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
+      // R52 koltuğunu ekle (sadece R sırası için)
+      if (currentRowLetter === 'R') {
+        rowSeats.push({
+          id: 52,
+          row: currentRowLetter,
+          seat: 12,
+          reserved: false
+        })
+      }
       // Ortadaki özel sıralı 4 koltuk (51, 49, 47, 45)
       const middleSeats = [51, 49, 47, 45]
       for (let i = 0; i < 4; i++) {
         rowSeats.push({
           id: middleSeats[i],
           row: currentRowLetter,
-          seat: i + 12,
+          seat: i + (currentRowLetter === 'R' ? 13 : 12),
           reserved: false
         })
       }
@@ -923,7 +989,7 @@ const generateSeats = (section) => {
         rowSeats.push({
           id: 43 - (i * 2),
           row: currentRowLetter,
-          seat: i + 16,
+          seat: i + (currentRowLetter === 'R' ? 17 : 16),
           reserved: false
         })
       }
@@ -970,13 +1036,20 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // Ortadaki özel sıralı 6 koltuk (62, 63, 61, 59, 57, 55)
-      const middleSeats = [62, 63, 61, 59, 57, 55]
-      for (let i = 0; i < 6; i++) {
+      // T61 ekle
+      rowSeats.push({
+        id: 61,
+        row: currentRowLetter,
+        seat: 13,
+        reserved: false
+      })
+      // Ortadaki özel sıralı 4 koltuk (59, 57, 55)
+      const middleSeats = [59, 57, 55]
+      for (let i = 0; i < 3; i++) {
         rowSeats.push({
           id: middleSeats[i],
           row: currentRowLetter,
-          seat: i + 13,
+          seat: i + 14,
           reserved: false
         })
       }
@@ -985,7 +1058,7 @@ const generateSeats = (section) => {
         rowSeats.push({
           id: 53 - (i * 2),
           row: currentRowLetter,
-          seat: i + 19,
+          seat: i + 17,
           reserved: false
         })
       }
@@ -1001,9 +1074,9 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // Ortadaki özel sıralı 4 koltuk (62, 64, 63, 61)
-      const middleSeats = [62, 64, 63, 61]
-      for (let i = 0; i < 4; i++) {
+      // Ortadaki özel sıralı 3 koltuk (63, 61, 59)
+      const middleSeats = [63, 61, 59]
+      for (let i = 0; i < 3; i++) {
         rowSeats.push({
           id: middleSeats[i],
           row: currentRowLetter,
@@ -1011,20 +1084,20 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // Son 11 koltuk için tek sayılar (59'dan 39'a)
+      // Son 11 koltuk için tek sayılar (57'den 39'a)
       for (let i = 0; i < 11; i++) {
         rowSeats.push({
-          id: 59 - (i * 2),
+          id: 57 - (i * 2),
           row: currentRowLetter,
-          seat: i + 17,
+          seat: i + 16,
           reserved: false
         })
       }
     }
     // Y sırası için özel numaralandırma
     else if (section === sections.centerBack && currentRowLetter === 'Y') {
-      // İlk 12 koltuk için çift sayılar (42'den 64'e)
-      for (let i = 0; i < 12; i++) {
+      // İlk 13 koltuk için çift sayılar (42'den 66'ya)
+      for (let i = 0; i < 13; i++) {
         rowSeats.push({
           id: 42 + (i * 2),
           row: currentRowLetter,
@@ -1038,18 +1111,22 @@ const generateSeats = (section) => {
         rowSeats.push({
           id: middleSeats[i],
           row: currentRowLetter,
-          seat: i + 13,
+          seat: i + 14, // Koltuk numaralarını bir arttırdık çünkü önceki döngüde bir koltuk daha ekledik
           reserved: false
         })
       }
-      // Son 11 koltuk için tek sayılar (57'den 41'e)
-      for (let i = 0; i < 11; i++) {
-        rowSeats.push({
-          id: 57 - (i * 2),
-          row: currentRowLetter,
-          seat: i + 17,
-          reserved: false
-        })
+      // Son 9 koltuk için tek sayılar (57'den 41'e) - Y37 ve Y39 hariç
+      for (let i = 0; i < 9; i++) {
+        const id = 57 - (i * 2);
+        // Y37 ve Y39'u atla
+        if (id !== 39 && id !== 37) {
+          rowSeats.push({
+            id: id,
+            row: currentRowLetter,
+            seat: i + 18, // Koltuk numaralarını bir arttırdık
+            reserved: false
+          })
+        }
       }
     }
     // Z sırası için özel numaralandırma
@@ -1063,13 +1140,20 @@ const generateSeats = (section) => {
           reserved: false
         })
       }
-      // Ortadaki özel sıralı 6 koltuk (62, 63, 61, 59, 57, 55)
-      const middleSeats = [62, 63, 61, 59, 57, 55]
-      for (let i = 0; i < 6; i++) {
+      // T61 ekle
+      rowSeats.push({
+        id: 61,
+        row: currentRowLetter,
+        seat: 13,
+        reserved: false
+      })
+      // Ortadaki özel sıralı 4 koltuk (59, 57, 55)
+      const middleSeats = [59, 57, 55]
+      for (let i = 0; i < 3; i++) {
         rowSeats.push({
           id: middleSeats[i],
           row: currentRowLetter,
-          seat: i + 13,
+          seat: i + 14,
           reserved: false
         })
       }
@@ -1078,7 +1162,7 @@ const generateSeats = (section) => {
         rowSeats.push({
           id: 53 - (i * 2),
           row: currentRowLetter,
-          seat: i + 19,
+          seat: i + 17,
           reserved: false
         })
       }
@@ -1127,11 +1211,51 @@ const handleSeatClick = (row, seatNumber) => {
 }
 
 const getSeatCategory = (row, seatNumber) => {
-  // E-J sıraları 1. kategori (yeşil), diğer sıralar 2. kategori (mavi)
-  if (row >= 'E' && row <= 'J') {
-    return '1' // 1. Kategori - yeşil
+  // A-B-C sıraları ve T,U,V,Y,Z sıralarındaki belirli koltuklar mavi border (kategori 2), diğer sıralar yeşil border (kategori 1)
+  if (row === 'A' || row === 'B' || row === 'C') {
+    return '2' // 2. Kategori - mavi
   }
-  return '2' // 2. Kategori - mavi
+  
+  // T sırasındaki 1,2,3,4,5,6 numaralı koltuklar mavi border
+  if (row === 'T' && [1,2,3,4,5,6].includes(seatNumber)) {
+    return '2' // 2. Kategori - mavi
+  }
+
+  // U sırasındaki 1,2,3,4,5,6,7,8 numaralı koltuklar mavi border
+  if (row === 'U' && [1,2,3,4,5,6,7,8].includes(seatNumber)) {
+    return '2' // 2. Kategori - mavi
+  }
+
+  // V sırasındaki 1,2,3,4,5,6,7,8 numaralı koltuklar mavi border
+  if (row === 'V' && [1,2,3,4,5,6,7,8].includes(seatNumber)) {
+    return '2' // 2. Kategori - mavi
+  }
+
+  // Y sırasındaki 1'den 39'a kadar tek sayılar ve 2'den 40'a kadar çift sayılar mavi border
+  if (row === 'Y') {
+    // 1'den 39'a kadar tek sayılar
+    if (seatNumber % 2 === 1 && seatNumber <= 39) {
+      return '2' // 2. Kategori - mavi
+    }
+    // 2'den 40'a kadar çift sayılar
+    if (seatNumber % 2 === 0 && seatNumber <= 40) {
+      return '2' // 2. Kategori - mavi
+    }
+  }
+
+  // Z sırasındaki 1'den 35'e kadar tek sayılar ve 2'den 26'ya kadar çift sayılar mavi border
+  if (row === 'Z') {
+    // 1'den 35'e kadar tek sayılar
+    if (seatNumber % 2 === 1 && seatNumber <= 35) {
+      return '2' // 2. Kategori - mavi
+    }
+    // 2'den 26'ya kadar çift sayılar
+    if (seatNumber % 2 === 0 && seatNumber <= 36) {
+      return '2' // 2. Kategori - mavi
+    }
+  }
+  
+  return '1' // 1. Kategori - yeşil
 }
 
 const getSeatStatus = (row, seatId) => {
