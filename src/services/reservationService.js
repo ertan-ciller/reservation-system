@@ -195,50 +195,6 @@ export const reservationService = {
     }
   },
 
-  // Süresi dolmuş rezervasyonları temizle
-  async cleanExpiredReservations() {
-    try {
-      const now = Timestamp.now();
-      
-      // Süresi dolmuş rezervasyonları bul
-      const q = query(
-        collection(db, 'reservations'),
-        where('status', '==', 'pending'),
-        where('expirationTime', '<=', now)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        console.log('Temizlenecek süresi dolmuş rezervasyon bulunamadı.');
-        return { success: true };
-      }
-
-      // Her bir süresi dolmuş rezervasyon için
-      for (const doc of querySnapshot.docs) {
-        const reservationData = doc.data();
-        
-        // Koltukları serbest bırak
-        for (const seatId of reservationData.seatIds) {
-          const seatFullId = `${seatId.row}-${seatId.numericId}`;
-          await seatService.unlockSeat(seatFullId, reservationData.showDate);
-        }
-
-        // Rezervasyonu sil
-        await deleteDoc(doc.ref);
-      }
-
-      console.log(`${querySnapshot.size} adet süresi dolmuş rezervasyon temizlendi.`);
-      return { success: true };
-    } catch (error) {
-      console.error('Süresi dolmuş rezervasyonlar temizlenirken hata:', error);
-      return { 
-        success: false, 
-        error: 'Süresi dolmuş rezervasyonlar temizlenirken hata oluştu.'
-      };
-    }
-  },
-
   // Test fonksiyonu
   async testConnection() {
     try {
