@@ -274,23 +274,26 @@ const handleNameInput = (event, field) => {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  position: relative;
 }
 
 .dialog-header {
-  padding: 1.25rem;
+  padding: 1.5rem;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: #f8fafc;
 }
 
 .dialog-header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #1a202c;
+  letter-spacing: -0.025em;
 }
 
 .close-button {
@@ -310,8 +313,8 @@ const handleNameInput = (event, field) => {
 }
 
 .selected-seats-info {
-  padding: 1.25rem;
-  background-color: #f8fafc;
+  padding: 1.5rem;
+  background-color: #fff;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -324,7 +327,10 @@ const handleNameInput = (event, field) => {
 .seats-container {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  background-color: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
 }
 
 .seats-list {
@@ -334,23 +340,39 @@ const handleNameInput = (event, field) => {
 }
 
 .seat-tag {
-  background-color: #edf2f7;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
+  background-color: #3182ce;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
   font-size: 0.875rem;
-  color: #2d3748;
+  color: white;
   font-weight: 500;
+  box-shadow: 0 2px 4px rgba(49, 130, 206, 0.1);
+  transition: transform 0.2s;
+}
+
+.seat-tag:hover {
+  transform: translateY(-1px);
+}
+
+.seat-tag.reserved {
+  background-color: #718096;
 }
 
 .total-price {
-  font-size: 1rem;
+  font-size: 1.125rem;
   color: #2d3748;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  text-align: right;
 }
 
 .price {
   color: #3182ce;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .reservation-form {
@@ -366,30 +388,35 @@ const handleNameInput = (event, field) => {
 .form-fields {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  min-height: fit-content;
+  gap: 1.25rem;
+  padding: 0.5rem 0;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.5rem;
+  position: relative;
 }
 
 .form-group label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #4a5568;
+  margin-left: 0.25rem;
 }
 
 .form-group input {
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
   color: #2d3748;
   background-color: white;
   transition: all 0.2s;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .form-group input::placeholder {
@@ -404,11 +431,30 @@ const handleNameInput = (event, field) => {
 
 .form-group input.error {
   border-color: #e53e3e;
+  background-color: #fff5f5;
 }
 
 .error-message {
   font-size: 0.75rem;
   color: #e53e3e;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.error-message::before {
+  content: "!";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background-color: #e53e3e;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
 .privacy-policy {
@@ -491,88 +537,86 @@ const handleNameInput = (event, field) => {
 
 .submit-button {
   width: 100%;
-  padding: 0.75rem;
+  padding: 1rem;
   background-color: #3182ce;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(49, 130, 206, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
 .submit-button:hover:not(:disabled) {
   background-color: #2c5282;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px rgba(49, 130, 206, 0.15);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(49, 130, 206, 0.1);
 }
 
 .submit-button:disabled {
   background-color: #a0aec0;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 @media (max-width: 480px) {
-  .dialog-overlay {
-    padding: 0;
-  }
-
   .dialog {
     width: 100%;
-    height: 100vh;
-    max-height: 100vh;
+    height: 100%;
+    max-height: 100%;
     border-radius: 0;
   }
 
-  .reservation-form {
-    padding: 1rem;
-    max-height: calc(100vh - 180px); /* Adjust for mobile header height */
-    gap: 1rem;
+  .dialog-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: white;
+    padding: 1.25rem;
+  }
+
+  .selected-seats-info {
+    padding: 1.25rem;
   }
 
   .form-fields {
-    gap: 0.875rem;
+    padding: 1.25rem;
+    gap: 1.5rem;
+  }
+
+  .form-group input {
+    padding: 1rem;
+    font-size: 1rem;
   }
 
   .privacy-policy {
-    margin: 0.75rem 0;
-    min-height: 300px;
-    max-height: 400px;
-  }
-
-  .policy-content {
-    font-size: 0.875rem;
-    padding: 1.25rem;
-    line-height: 1.7;
-    max-height: none;
-    height: auto;
-  }
-
-  .policy-content :deep(h3) {
-    font-size: 1rem;
-    margin: 0 0 1.25rem 0;
-  }
-
-  .policy-content :deep(p) {
-    margin: 1rem 0;
-  }
-
-  .policy-content :deep(li) {
-    padding-left: 1.25rem;
-    margin: 0.5rem 0;
-  }
-
-  .policy-content :deep(ul) {
-    margin: 0.875rem 0;
+    margin: 0;
+    border-radius: 0;
+    flex: 1;
   }
 
   .form-footer {
     position: sticky;
     bottom: 0;
     background: white;
-    padding-top: 1rem;
-    margin-top: 1rem;
+    padding: 1rem 1.25rem;
+    margin: 0;
     border-top: 1px solid #e2e8f0;
-    z-index: 10;
+    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.05);
+  }
+
+  .submit-button {
+    padding: 1.125rem;
+    border-radius: 12px;
   }
 }
 </style> 
