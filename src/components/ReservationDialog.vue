@@ -144,6 +144,21 @@ const handleSubmit = async () => {
     }
   }
 }
+
+const handlePhoneInput = (event) => {
+  // Sadece rakamları al
+  const numericValue = event.target.value.replace(/\D/g, '')
+  // Maximum 10 karakter olacak şekilde güncelle
+  formData.value.phone = numericValue.slice(0, 10)
+}
+
+const handleNameInput = (event, field) => {
+  // Sadece harfleri ve boşlukları al (Türkçe karakterler dahil)
+  const letterValue = event.target.value.replace(/\d/g, '')
+  // Birden fazla boşluğu tek boşluğa çevir
+  const normalizedValue = letterValue.replace(/\s+/g, ' ')
+  formData.value[field] = normalizedValue
+}
 </script>
 
 <template>
@@ -183,6 +198,8 @@ const handleSubmit = async () => {
               type="text"
               placeholder="Adınız"
               :class="{ 'error': errors.firstName }"
+              @input="(e) => handleNameInput(e, 'firstName')"
+              pattern="[A-Za-zğüşıöçĞÜŞİÖÇ\s]*"
             />
             <span class="error-message" v-if="errors.firstName">{{ errors.firstName }}</span>
           </div>
@@ -195,6 +212,8 @@ const handleSubmit = async () => {
               type="text"
               placeholder="Soyadınız"
               :class="{ 'error': errors.lastName }"
+              @input="(e) => handleNameInput(e, 'lastName')"
+              pattern="[A-Za-zğüşıöçĞÜŞİÖÇ\s]*"
             />
             <span class="error-message" v-if="errors.lastName">{{ errors.lastName }}</span>
           </div>
@@ -208,6 +227,9 @@ const handleSubmit = async () => {
               placeholder="5XXXXXXXXX"
               maxlength="10"
               :class="{ 'error': errors.phone }"
+              @input="handlePhoneInput"
+              pattern="[0-9]*"
+              inputmode="numeric"
             />
             <span class="error-message" v-if="errors.phone">{{ errors.phone }}</span>
           </div>

@@ -157,28 +157,58 @@ const centerSeatMapScroll = () => {
 }
 
 const handleMouseDown = (e) => {
+  if (e.button !== 0) return // Sadece sol tıklamayı kabul et
+  
   const container = seatMapContainerRef.value
   if (!container) return
 
+  isPointerDown.value = true
+  container.style.cursor = 'grabbing'
+  container.style.userSelect = 'none'
+
   const startX = e.pageX - container.offsetLeft
-  const startY = e.pageY
+  const startY = e.pageY - container.offsetTop
   const scrollLeft = container.scrollLeft
   const scrollTop = window.pageYOffset
 
+  let lastX = startX
+  let lastY = startY
+  let rafId = null
+
   const handleMouseMove = (e) => {
     e.preventDefault()
-    const x = e.pageX - container.offsetLeft
-    const y = e.pageY
-    const walkX = (x - startX)
-    const walkY = (y - startY)
     
-    container.scrollLeft = scrollLeft - walkX
-    window.scrollTo(0, scrollTop - walkY)
+    const x = e.pageX - container.offsetLeft
+    const y = e.pageY - container.offsetTop
+    
+    // Hareket mesafesini hesapla
+    const dx = x - lastX
+    const dy = y - lastY
+    
+    // Son pozisyonu güncelle
+    lastX = x
+    lastY = y
+
+    // RAF ile scroll pozisyonunu güncelle
+    if (rafId) {
+      cancelAnimationFrame(rafId)
+    }
+
+    rafId = requestAnimationFrame(() => {
+      container.scrollLeft -= dx
+      window.scrollBy(0, -dy)
+    })
   }
 
   const handleMouseUp = () => {
+    isPointerDown.value = false
+    container.style.cursor = 'grab'
+    container.style.removeProperty('user-select')
     document.removeEventListener('mousemove', handleMouseMove)
     document.removeEventListener('mouseup', handleMouseUp)
+    if (rafId) {
+      cancelAnimationFrame(rafId)
+    }
   }
 
   document.addEventListener('mousemove', handleMouseMove)
@@ -392,6 +422,13 @@ main {
   box-sizing: border-box;
   cursor: grab;
   user-select: none;
+  will-change: transform, scroll-position;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
 }
 
 .seat-map-container:active {
@@ -409,6 +446,9 @@ main {
   transform: scale(0.9);
   transform-origin: center center;
   scroll-snap-align: center;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @media (max-width: 1024px) {
