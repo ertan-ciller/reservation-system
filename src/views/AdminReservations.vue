@@ -116,24 +116,36 @@ const getSeatStatusClass = (status) => {
 const filteredReservations = computed(() => {
   if (!searchQuery.value) return reservations.value
 
-  const query = searchQuery.value.toLowerCase()
-  const searchTerms = query.split(' ')
+  const query = searchQuery.value.toLowerCase().trim()
+  if (!query) return reservations.value
+
+  const searchTerms = query.split(' ').filter(term => term.length > 0)
 
   return reservations.value.filter(res => {
     const fullName = `${res.firstName} ${res.lastName}`.toLowerCase()
+    const phone = (res.phoneNumber || '').toLowerCase()
     
-    // Tam eşleşme kontrolü
-    if (fullName === query) return true
-    
-    // Her bir kelime için ayrı kontrol
-    const matchesAllTerms = searchTerms.every(term => 
-      fullName.includes(term) ||
-      res.phoneNumber?.includes(term) ||
-      // Koltuk numaralarında arama
-      res.seatIds?.some(seatId => seatId.toLowerCase().includes(term))
-    )
-    
-    return matchesAllTerms
+    // Her bir arama terimi için kontrol
+    return searchTerms.every(term => {
+      // İsim kontrolü
+      if (fullName.includes(term)) return true
+      
+      // Telefon kontrolü
+      if (phone.includes(term)) return true
+      
+      // Koltuk numarası kontrolü
+      if (res.seatIds && Array.isArray(res.seatIds)) {
+        return res.seatIds.some(seat => {
+          if (typeof seat === 'object' && seat.row && seat.id) {
+            const seatNumber = `${seat.row}-${seat.id}`.toLowerCase()
+            return seatNumber.includes(term)
+          }
+          return false
+        })
+      }
+      
+      return false
+    })
   })
 })
 
@@ -259,7 +271,8 @@ const formatSeatIds = (seatIds) => {
     </div>
 
     <div v-else class="reservations-list">
-      <div class="table-responsive">
+      <!-- Desktop View -->
+      <div class="table-responsive desktop-view">
         <table>
           <thead>
             <tr>
@@ -334,13 +347,79 @@ const formatSeatIds = (seatIds) => {
           </tbody>
         </table>
       </div>
+
+      <!-- Mobile View -->
+      <div class="mobile-view">
+        <div v-for="reservation in filteredReservations" :key="reservation.id" class="reservation-card">
+          <div class="card-header">
+            <div class="card-title">
+              <h3>{{ reservation.firstName }} {{ reservation.lastName }}</h3>
+              <span :class="['status-badge', getStatusClass(calculateReservationStatus(reservation))]">
+                {{ getStatusText(calculateReservationStatus(reservation)) }}
+              </span>
+            </div>
+            <div class="card-subtitle">
+              <span class="date">📅 {{ formatDate(reservation.showDate, 'show') }}</span>
+              <span class="phone">📞 {{ reservation.phoneNumber }}</span>
+            </div>
+          </div>
+          
+          <div class="card-seats">
+            <h4>Koltuklar</h4>
+            <div class="seat-management">
+              <div v-for="seat in reservation.seatIds" :key="seat.id" 
+                   class="seat-item" 
+                   :class="getSeatStatusClass(getSeatStatus(reservation, `${seat.row}-${seat.id}`))">
+                <span class="seat-number">{{ seat.row }}-{{ seat.id }}</span>
+                <div class="seat-actions" v-if="getSeatStatus(reservation, `${seat.row}-${seat.id}`) === 'pending'">
+                  <button 
+                    @click="handleApproveSeat(reservation.id, `${seat.row}-${seat.id}`)"
+                    class="seat-action approve"
+                    title="Koltuğu Onayla">
+                    ✓
+                  </button>
+                  <button 
+                    @click="handleRejectSeat(reservation.id, `${seat.row}-${seat.id}`)"
+                    class="seat-action reject"
+                    title="Koltuğu Reddet">
+                    ✕
+                  </button>
+                </div>
+                <span v-else class="seat-status">
+                  {{ getSeatStatus(reservation, `${seat.row}-${seat.id}`) === 'approved' ? '✓' : '✕' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-actions" v-if="hasPendingSeats(reservation)">
+            <button
+              @click="handleApprove(reservation.id)"
+              class="action-btn approve"
+            >
+              Tümünü Onayla
+            </button>
+            <button
+              @click="handleReject(reservation.id)"
+              class="action-btn reject"
+            >
+              Tümünü Reddet
+            </button>
+          </div>
+          <div v-else class="card-status">
+            <span :class="calculateReservationStatus(reservation) === 'approved' ? 'approved-text' : 'rejected-text'">
+              {{ getStatusText(calculateReservationStatus(reservation)) }}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .admin-reservations {
-  padding: 2rem;
+  padding: 1rem;
   max-width: 1200px;
   margin: 0 auto;
   color: #2c3e50;
@@ -350,16 +429,16 @@ const formatSeatIds = (seatIds) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   background: #fff;
-  padding: 1.5rem;
+  padding: 1.25rem;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: #2c3e50;
 }
 
@@ -375,6 +454,7 @@ h1 {
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
+  font-size: 1rem;
 }
 
 .logout-button:hover {
@@ -383,14 +463,14 @@ h1 {
 }
 
 .search-bar {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .search-wrapper {
   position: relative;
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .search-icon {
@@ -416,6 +496,117 @@ h1 {
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
+/* Mobile View Styles */
+.mobile-view {
+  display: none;
+}
+
+.reservation-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.card-header {
+  margin-bottom: 1rem;
+}
+
+.card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.card-title h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.card-subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.card-seats {
+  margin-bottom: 1rem;
+}
+
+.card-seats h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #64748b;
+}
+
+.status-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .desktop-view {
+    display: none;
+  }
+
+  .mobile-view {
+    display: block;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .logout-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-bar input {
+    font-size: 0.95rem;
+    padding: 0.875rem 1rem 0.875rem 2.75rem;
+  }
+
+  .card-actions .action-btn {
+    width: 100%;
+    height: 44px;
+    font-size: 0.95rem;
+  }
+
+  .seat-management {
+    gap: 0.5rem;
+  }
+
+  .seat-item {
+    flex: 1;
+    min-width: calc(50% - 0.25rem);
+    justify-content: space-between;
+  }
+
+  .seat-action {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Keep existing styles for desktop view and common elements */
 .table-responsive {
   overflow-x: auto;
   background: #fff;
