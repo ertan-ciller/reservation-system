@@ -45,19 +45,19 @@ let isOnline = true;
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    console.log('Online duruma geçildi');
+    //console.log('Online duruma geçildi');
     isOnline = true;
   });
   
   window.addEventListener('offline', () => {
-    console.log('Offline duruma geçildi');
+    //console.log('Offline duruma geçildi');
     isOnline = false;
   });
 }
 
 // Bağlantı durumunu kontrol et ve konsola yaz
-console.log('Firebase bağlantısı başlatıldı');
-console.log('Firestore veritabanı:', db ? 'Bağlandı' : 'Bağlanamadı');
-console.log('Online durumu:', isOnline ? 'Bağlı' : 'Bağlı değil');
+//console.log('Firebase bağlantısı başlatıldı');
+//console.log('Firestore veritabanı:', db ? 'Bağlandı' : 'Bağlanamadı');
+//console.log('Online durumu:', isOnline ? 'Bağlı' : 'Bağlı değil');
 
 export { db, auth, isOnline }; 

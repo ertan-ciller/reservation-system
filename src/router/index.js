@@ -46,19 +46,19 @@ const getCurrentUser = () => {
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const user = await getCurrentUser()
-  console.log('Current route:', to.path)
-  console.log('User status:', user ? 'Logged in' : 'Not logged in')
+  // console.log('Current route:', to.path)
+  // console.log('User status:', user ? 'Logged in' : 'Not logged in')
 
   // Admin rezervasyonlar sayfası kontrolü
   if (to.name === 'admin-reservations' && !user) {
-    console.log('Redirecting to admin login')
+    // console.log('Redirecting to admin login')
     next({ name: 'admin-login' })
     return
   }
 
   // Giriş yapmış kullanıcı admin login sayfasına erişmeye çalışırsa
   if (to.name === 'admin-login' && user) {
-    console.log('Redirecting to admin reservations')
+    // console.log('Redirecting to admin reservations')
     next({ name: 'admin-reservations' })
     return
   }

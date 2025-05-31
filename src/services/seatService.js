@@ -103,12 +103,12 @@ export const seatService = {
         });
         
         await batch.commit();
-        console.log(`${expiredSeats.size} adet süresi dolmuş kilit kaldırıldı`);
+        //console.log(`${expiredSeats.size} adet süresi dolmuş kilit kaldırıldı`);
       }
       
       return { success: true };
     } catch (error) {
-      console.error('Süresi dolmuş kilitleri kaldırma hatası:', error);
+      //console.error('Süresi dolmuş kilitleri kaldırma hatası:', error);
       return { success: false, error: error.message };
     }
   },
