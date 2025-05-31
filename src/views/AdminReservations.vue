@@ -12,6 +12,59 @@ const searchQuery = ref('')
 const isLoading = ref(true)
 const error = ref('')
 
+// Koltuk kategorisini belirle
+const getSeatCategory = (row, seatNumber) => {
+  // A, B, C sıraları tamamen 2. kategori
+  if (['A', 'B', 'C'].includes(row)) {
+    return 2
+  }
+  
+  // Y sırası için özel kontrol (Y2-Y40 arası 2. kategori)
+  if (row === 'Y') {
+    const seatNum = parseInt(seatNumber)
+    return (seatNum >= 2 && seatNum <= 40) ? 2 : 1
+  }
+
+  // Z sırası için özel kontrol (Z2-Z26 arası 2. kategori)
+  if (row === 'Z') {
+    const seatNum = parseInt(seatNumber)
+    return (seatNum >= 2 && seatNum <= 26) ? 2 : 1
+  }
+
+  // V sırası için özel kontrol (V1-V8 arası tek ve çift sayılar 2. kategori)
+  if (row === 'V') {
+    const seatNum = parseInt(seatNumber)
+    const secondCategorySeats = [1, 2, 3, 4, 5, 6, 7, 8]
+    return secondCategorySeats.includes(seatNum) ? 2 : 1
+  }
+  if (row === 'U') {
+    const seatNum = parseInt(seatNumber)
+    const secondCategorySeats = [1, 2, 3, 4, 5, 6, 7, 8]
+    return secondCategorySeats.includes(seatNum) ? 2 : 1
+  }
+  if (row === 'T') {
+    const seatNum = parseInt(seatNumber)
+    const secondCategorySeats = [1, 2, 3, 4, 5, 6]
+    return secondCategorySeats.includes(seatNum) ? 2 : 1
+  }
+  
+  // Diğer tüm koltuklar 1. kategori
+  return 1
+}
+
+// Koltuk fiyatını hesapla
+const calculateSeatPrice = (category) => {
+  return category === 1 ? 300 : 150 // 1. kategori 300TL, 2. kategori 150TL
+}
+
+// Toplam tutarı hesapla
+const calculateTotalAmount = (seats) => {
+  return seats.reduce((total, seat) => {
+    const category = getSeatCategory(seat.row, seat.id)
+    return total + calculateSeatPrice(category)
+  }, 0)
+}
+
 // Auth kontrolü
 onMounted(() => {
   const auth = getAuth()
@@ -28,12 +81,23 @@ onMounted(() => {
   )
 
   const unsubscribeReservations = onSnapshot(q, (snapshot) => {
-    reservations.value = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate(),
-      expirationTime: doc.data().expirationTime?.toDate()
-    }))
+    reservations.value = snapshot.docs.map(doc => {
+      const data = doc.data()
+      // Her koltuğa kategori bilgisi ekle
+      const seatsWithCategories = data.seatIds.map(seat => ({
+        ...seat,
+        category: getSeatCategory(seat.row, seat.id)
+      }))
+      
+      return {
+        id: doc.id,
+        ...data,
+        seatIds: seatsWithCategories,
+        totalAmount: calculateTotalAmount(data.seatIds),
+        createdAt: data.createdAt?.toDate(),
+        expirationTime: data.expirationTime?.toDate()
+      }
+    })
     isLoading.value = false
   }, (err) => {
     console.error('Rezervasyon dinleme hatası:', err)
@@ -168,6 +232,15 @@ const formatDate = (date, type = 'full') => {
   return new Date(date).toLocaleString('tr-TR', options)
 }
 
+// Para formatla fonksiyonu
+const formatCurrency = (amount) => {
+  if (!amount) return '0,00 ₺'
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY'
+  }).format(amount)
+}
+
 // Bekleyen koltukları kontrol et
 const hasPendingSeats = (reservation) => {
   // Önce genel rezervasyon durumunu kontrol et
@@ -295,7 +368,10 @@ const formatSeatIds = (seatIds) => {
                   <div v-for="seat in reservation.seatIds" :key="seat.id" 
                        class="seat-item" 
                        :class="getSeatStatusClass(getSeatStatus(reservation, `${seat.row}-${seat.id}`))">
-                    <span class="seat-number">{{ seat.row }}-{{ seat.id }}</span>
+                    <span class="seat-number">
+                      {{ seat.row }}-{{ seat.id }}
+                      <span class="seat-category">({{ getSeatCategory(seat.row, seat.id) }}. Kategori)</span>
+                    </span>
                     <div class="seat-actions" v-if="getSeatStatus(reservation, `${seat.row}-${seat.id}`) === 'pending'">
                       <button 
                         @click="handleApproveSeat(reservation.id, `${seat.row}-${seat.id}`)"
@@ -314,6 +390,9 @@ const formatSeatIds = (seatIds) => {
                       {{ getSeatStatus(reservation, `${seat.row}-${seat.id}`) === 'approved' ? '✓' : '✕' }}
                     </span>
                   </div>
+                </div>
+                <div class="total-amount">
+                  Toplam Tutar: {{ reservation.totalAmount.toLocaleString('tr-TR') }},00₺
                 </div>
               </td>
               <td class="show-date">{{ formatDate(reservation.showDate, 'show') }}</td>
@@ -361,6 +440,7 @@ const formatSeatIds = (seatIds) => {
             <div class="card-subtitle">
               <span class="date">📅 {{ formatDate(reservation.showDate, 'show') }}</span>
               <span class="phone">📞 {{ reservation.phoneNumber }}</span>
+              <span class="amount">💰 {{ reservation.totalAmount.toLocaleString('tr-TR') }},00₺</span>
             </div>
           </div>
           
@@ -370,7 +450,10 @@ const formatSeatIds = (seatIds) => {
               <div v-for="seat in reservation.seatIds" :key="seat.id" 
                    class="seat-item" 
                    :class="getSeatStatusClass(getSeatStatus(reservation, `${seat.row}-${seat.id}`))">
-                <span class="seat-number">{{ seat.row }}-{{ seat.id }}</span>
+                <span class="seat-number">
+                  {{ seat.row }}-{{ seat.id }}
+                  <span class="seat-category">({{ getSeatCategory(seat.row, seat.id) }}. Kategori)</span>
+                </span>
                 <div class="seat-actions" v-if="getSeatStatus(reservation, `${seat.row}-${seat.id}`) === 'pending'">
                   <button 
                     @click="handleApproveSeat(reservation.id, `${seat.row}-${seat.id}`)"
@@ -622,8 +705,8 @@ table {
 }
 
 th, td {
-  padding: 1rem;
-  text-align: left;
+  padding: 0.2rem;
+  text-align: center;
   border-bottom: 1px solid #eee;
 }
 
@@ -648,7 +731,7 @@ th:nth-child(7) { width: 20%; } /* İşlemler */
 
 .actions {
   width: 20%;
-  padding: 0.5rem;
+  padding: 0.2rem;
   text-align: right;
 }
 
@@ -786,6 +869,7 @@ th:nth-child(7) { width: 20%; } /* İşlemler */
 .show-date {
   font-weight: 500;
   color: #1e40af;
+  text-align: right;
 }
 
 .status {
@@ -1007,5 +1091,65 @@ th:nth-child(7) { width: 20%; } /* İşlemler */
   background-color: #fef3c7;
   border-color: #92400e;
   color: #92400e;
+}
+
+.seat-category {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-left: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* 2. Kategori (Mavi) */
+.seat-category:has(+ span:contains('2')) {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #1976d2;
+}
+
+/* 1. Kategori (Yeşil) */
+.seat-category:has(+ span:contains('1')) {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #2e7d32;
+}
+
+.total-amount {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #e2e8f0;
+  font-weight: 600;
+  color: #1e40af;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.amount {
+  color: #1e40af;
+  font-weight: 600;
+  background-color: #eff6ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+@media (max-width: 768px) {
+  .seat-category {
+    display: block;
+    margin: 4px 0 0 0;
+  }
+
+  .total-amount {
+    text-align: right;
+    padding: 0.75rem 0;
+    border-top: 1px dashed #e2e8f0;
+    margin-top: 0.75rem;
+  }
+
+  .card-subtitle .amount {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
 }
 </style> 
