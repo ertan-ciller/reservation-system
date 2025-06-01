@@ -8,12 +8,12 @@ let lockCheckInterval = null;
 
 export const reservationService = {
   // Periyodik kilit kontrolünü başlat
-  startLockCheck() {
+  async startLockCheck() {
     if (!lockCheckInterval) {
       // Her 1 dakikada bir kilitleri kontrol et
-      lockCheckInterval = setInterval(async () => {
-        await seatService.checkAndRemoveExpiredLocks();
-      }, 60 * 1000);
+      //lockCheckInterval = setInterval(async () => {
+      await seatService.checkAndRemoveExpiredLocks();
+      //}, 60 * 1000);
     }
   },
 
@@ -25,6 +25,54 @@ export const reservationService = {
     }
   },
 
+  async checkActiveSession(seatNumbers,showDate) {
+    try {
+      const activeSessionRef = collection(db, 'activeSession');
+      const querySnapshot = await getDocs(activeSessionRef);
+      
+      // Convert seatNumbers to a Set for efficient lookup
+      const seatNumberSet = new Set(seatNumbers);
+      
+      // Check each active session document
+      let isFoundedSeats = []
+      for (const doc of querySnapshot.docs) {
+        const sessionData = doc.data();
+        
+        // If the session has seats data, check if any of our seats are in it
+        if (sessionData.seats && Array.isArray(sessionData.seats)&& sessionData.showDate==showDate) {
+          for (const seat of sessionData.seats) {
+            if (seatNumberSet.has(seat) && sessionData.expirationTime > Timestamp.now()) {
+              isFoundedSeats.push(seat) // Found a seat in an active session
+
+            }
+            
+          }
+        }
+      }
+      
+      return isFoundedSeats; // No seats found in any active session
+    } catch (error) {
+      console.error('Active session check error:', error);
+      return [];
+    }
+  },
+
+  async createSession(seatNumbers,showDate){
+    try {
+      const activeSessionRef = collection(db, 'activeSession');
+      const newSession = {
+        seats: seatNumbers,
+        showDate: showDate,
+        createdAt: serverTimestamp(),
+        expirationTime: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)) // 10 minutes
+      };
+      const docRef = await addDoc(activeSessionRef, newSession);
+      return { success: true, id: docRef.id };
+    } catch (error) {
+      console.error('Active session creation error:', error);
+      return { success: false, error: error.message };
+    }
+  },
   // Yeni rezervasyon oluşturma
   async createReservation(reservationData) {
     if (isProcessing) {
@@ -48,7 +96,7 @@ export const reservationService = {
         ...reservationData,
         status: 'pending',
         createdAt: serverTimestamp(),
-        expirationTime: Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000)) // 5 dakika
+        expirationTime: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)) // 10 minutes
       };
       
       const docRef = await addDoc(reservationRef, newReservation);
@@ -67,6 +115,17 @@ export const reservationService = {
     }
   },
 
+  async clearSession(seatFullId,showDate){
+    const activeSessionRef = collection(db, 'activeSession');
+    const querySnapshot = await getDocs(activeSessionRef);
+    for (const doc of querySnapshot.docs) {
+      const sessionData = doc.data();
+      
+      if(JSON.stringify(sessionData.seats) == JSON.stringify(seatFullId) && sessionData.showDate==showDate){
+        await deleteDoc(doc.ref);
+      }
+    }
+  },
   // Kullanıcının mevcut rezervasyonlarını tek seferlik getir
   async getUserReservations(phoneNumber) {
     try {

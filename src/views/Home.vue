@@ -78,16 +78,32 @@ const removeSeat = (seat) => {
   }
 }
 
-const handleReservationClick = () => {
+const handleReservationClick = async () => {
   if (selectedSeats.value.length === 0) {
     toastService.warning('Lütfen en az bir koltuk seçiniz!')
     return
   }
+  const isActiveSession = await reservationService.checkActiveSession(selectedSeats.value.map(seat => seat.seatFullId),selectedDate.value)
+  console.log("Seçilen Tarih ",selectedDate);
+
+  if(isActiveSession.length>0){
+    toastService.error('Bu koltuklar zaten başka bir kullanıcı tarafından seçildiği için seçilemez! '+isActiveSession.map(seat => seat).join(', '));
+    return;
+  }else{
+    const sessionResult = await reservationService.createSession(selectedSeats.value.map(seat => seat.seatFullId),selectedDate.value)
+    if(sessionResult.success){
+      isDialogOpen.value = true
+    }else{
+      toastService.error(sessionResult.error)
+    }
+  }
+
   isDialogOpen.value = true
   errorMessage.value = ''
 }
 
 const handleDialogClose = () => {
+  reservationService.clearSession(selectedSeats.value.map(seat => seat.seatFullId),selectedDate.value)
   isDialogOpen.value = false
   errorMessage.value = ''
 }
@@ -120,6 +136,7 @@ const handleReservation = async (userInfo) => {
     };
 
     const result = await reservationService.createReservation(reservationData);
+    reservationService.clearSession(userInfo.seatFullId,selectedDate.value);
     
     if (result.success) {
       isDialogOpen.value = false;
@@ -215,12 +232,19 @@ const handleMouseDown = (e) => {
   document.addEventListener('mouseup', handleMouseUp)
 }
 
+const handleBeforeUnload = () => {
+  reservationService.clearSession(selectedSeats.value.map(seat => seat.seatFullId),selectedDate.value)
+}
+
 onMounted(() => {
   centerSeatMapScroll()
   const container = seatMapContainerRef.value
   if (container) {
     container.addEventListener('mousedown', handleMouseDown)
   }
+
+  // Add beforeunload event listener for browser tab closure
+  window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
 onUnmounted(() => {
@@ -228,6 +252,13 @@ onUnmounted(() => {
   if (container) {
     container.removeEventListener('mousedown', handleMouseDown)
   }
+  
+  // Clear any active sessions when component is destroyed
+  reservationService.clearSession(selectedSeats.value.map(seat => seat.seatFullId), selectedDate.value)
+
+
+  // Remove beforeunload event listener
+  //window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
 watch(selectedDate, () => {

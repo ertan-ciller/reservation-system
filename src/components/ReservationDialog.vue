@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { toastService } from '../services/toastService'
+import { reservationService } from '../services/reservationService'
 
 const privacyPolicyText = `
 <div class="privacy-policy-content">
@@ -129,12 +130,15 @@ const handleSubmit = async () => {
         id: seat.seatNumber,
         row: seat.rowLabel,
         numericId: parseInt(seat.seatNumber)
-      }))
+      })),
+      seatFullId: props.selectedSeats.map(seat => seat.seatFullId)
+      
     }
 
     try {
       await emit('submit', reservationData)
       formData.value = { firstName: '', lastName: '', phone: '' }
+
       toastService.success('Rezervasyonunuz başarıyla oluşturuldu!')
       props.reservedSeats.push(...reservationData.seatIds)
       emit('close')

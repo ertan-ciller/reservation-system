@@ -81,6 +81,7 @@ onMounted(() => {
   )
 
   const unsubscribeReservations = onSnapshot(q, (snapshot) => {
+    
     reservations.value = snapshot.docs.map(doc => {
       const data = doc.data()
       // Her koltuğa kategori bilgisi ekle
@@ -98,6 +99,7 @@ onMounted(() => {
         expirationTime: data.expirationTime?.toDate()
       }
     })
+    
     isLoading.value = false
   }, (err) => {
     console.error('Rezervasyon dinleme hatası:', err)
@@ -554,6 +556,12 @@ h1 {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.search-wrapper:focus-within {
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+  transform: translateY(-1px);
 }
 
 .search-icon {
@@ -562,15 +570,23 @@ h1 {
   top: 50%;
   transform: translateY(-50%);
   color: #666;
+  font-size: 1.2rem;
 }
 
 .search-bar input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
+  padding: 1.2rem 1rem 1.2rem 3rem;
   border: 2px solid transparent;
   border-radius: 12px;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  color: #2c3e50;
+}
+
+.search-bar input::placeholder {
+  color: #94a3b8;
   font-size: 1rem;
-  transition: all 0.2s ease;
 }
 
 .search-bar input:focus {
@@ -1013,39 +1029,77 @@ th:nth-child(7) { width: 20%; } /* İşlemler */
 .seat-management {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
 }
 
 .seat-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  background: #f8fafc;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
   border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.seat-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .seat-number {
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.seat-category {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
   font-weight: 500;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 1. Kategori (Yeşil) */
+.seat-item:has(.seat-category:contains('1')) .seat-category {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* 2. Kategori (Mavi) */
+.seat-item:has(.seat-category:contains('2')) .seat-category {
+  background-color: #dbeafe;
+  color: #1e40af;
 }
 
 .seat-actions {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 
 .seat-action {
   border: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 1rem;
   color: white;
   transition: all 0.2s ease;
 }
@@ -1056,6 +1110,7 @@ th:nth-child(7) { width: 20%; } /* İşlemler */
 
 .seat-action.approve:hover {
   background-color: #16a34a;
+  transform: translateY(-1px);
 }
 
 .seat-action.reject {
@@ -1064,92 +1119,87 @@ th:nth-child(7) { width: 20%; } /* İşlemler */
 
 .seat-action.reject:hover {
   background-color: #dc2626;
+  transform: translateY(-1px);
 }
 
 .seat-status {
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 1.1rem;
+  margin-left: auto;
+  border-radius: 6px;
 }
 
 .seat-approved {
-  background-color: #dcfce7;
+  background-color: #f0fdf4;
   border-color: #22c55e;
   color: #166534;
 }
 
 .seat-rejected {
-  background-color: #fee2e2;
+  background-color: #fef2f2;
   border-color: #ef4444;
   color: #dc2626;
 }
 
 .seat-pending {
-  background-color: #fef3c7;
-  border-color: #92400e;
-  color: #92400e;
-}
-
-.seat-category {
-  font-size: 0.75rem;
-  color: #64748b;
-  margin-left: 4px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-/* 2. Kategori (Mavi) */
-.seat-category:has(+ span:contains('2')) {
-  background-color: rgba(33, 150, 243, 0.1);
-  color: #1976d2;
-}
-
-/* 1. Kategori (Yeşil) */
-.seat-category:has(+ span:contains('1')) {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #2e7d32;
+  background-color: #fefce8;
+  border-color: #ca8a04;
+  color: #854d0e;
 }
 
 .total-amount {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px dashed #e2e8f0;
+  margin-top: 1rem;
+  padding: 1rem;
+  border-top: 2px dashed #e2e8f0;
   font-weight: 600;
   color: #1e40af;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-.amount {
-  color: #1e40af;
-  font-weight: 600;
-  background-color: #eff6ff;
-  padding: 4px 8px;
-  border-radius: 6px;
+  font-size: 1.1rem;
+  text-align: right;
+  background: #f8fafc;
+  border-radius: 0 0 8px 8px;
 }
 
 @media (max-width: 768px) {
+  .seat-item {
+    min-width: 100%;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.75rem;
+  }
+
+  .seat-number {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   .seat-category {
-    display: block;
-    margin: 4px 0 0 0;
+    margin: 0;
+    font-size: 0.8rem;
+  }
+
+  .seat-action {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+
+  .search-bar input {
+    padding: 1rem 1rem 1rem 2.75rem;
+    font-size: 1rem;
+  }
+
+  .search-icon {
+    font-size: 1.1rem;
   }
 
   .total-amount {
-    text-align: right;
-    padding: 0.75rem 0;
-    border-top: 1px dashed #e2e8f0;
-    margin-top: 0.75rem;
-  }
-
-  .card-subtitle .amount {
-    display: block;
-    width: 100%;
-    margin-top: 0.5rem;
-    text-align: center;
+    font-size: 1rem;
+    padding: 0.75rem;
   }
 }
 </style> 
