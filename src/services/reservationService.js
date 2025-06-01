@@ -12,7 +12,7 @@ export const reservationService = {
     if (!lockCheckInterval) {
       // Her 1 dakikada bir kilitleri kontrol et
       //lockCheckInterval = setInterval(async () => {
-      await seatService.checkAndRemoveExpiredLocks();
+      //await seatService.checkAndRemoveExpiredLocks();
       //}, 60 * 1000);
     }
   },
