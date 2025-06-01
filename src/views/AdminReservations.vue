@@ -197,6 +197,10 @@ const filteredReservations = computed(() => {
       // Telefon kontrolü
       if (phone.includes(term)) return true
       
+      //Gösterim tarihi kontrolü
+      if (res.showDate && res.showDate.includes(term)) return true
+
+
       // Koltuk numarası kontrolü
       if (res.seatIds && Array.isArray(res.seatIds)) {
         return res.seatIds.some(seat => {
