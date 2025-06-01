@@ -431,7 +431,6 @@ const formatSeatIds = (seatIds) => {
 
       <!-- Mobile View -->
       <div class="mobile-view">
-        {{ filteredReservations.length }}
         <div v-for="reservation in filteredReservations" :key="reservation.id" class="reservation-card">
           <div class="card-header">
             <div class="card-title">

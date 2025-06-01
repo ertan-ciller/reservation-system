@@ -64,7 +64,7 @@ export const reservationService = {
         seats: seatNumbers,
         showDate: showDate,
         createdAt: serverTimestamp(),
-        expirationTime: Timestamp.fromDate(new Date(Date.now() + 1 * 60 * 1000)) // 1 dakika
+        expirationTime: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)) // 10 minutes
       };
       const docRef = await addDoc(activeSessionRef, newSession);
       return { success: true, id: docRef.id };
@@ -96,7 +96,7 @@ export const reservationService = {
         ...reservationData,
         status: 'pending',
         createdAt: serverTimestamp(),
-        expirationTime: Timestamp.fromDate(new Date(Date.now() + 1 * 60 * 1000)) // 1 dakika
+        expirationTime: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)) // 10 minutes
       };
       
       const docRef = await addDoc(reservationRef, newReservation);
