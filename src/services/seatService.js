@@ -82,36 +82,36 @@ export const seatService = {
   },
 
   // Süresi dolmuş kilitleri kontrol et ve kaldır
-  async checkAndRemoveExpiredLocks() {
-    try {
-      const now = new Date();
-      const expirationTime = new Date(now.getTime() - 5 * 60 * 1000); // 5 dakika öncesi
+  // async checkAndRemoveExpiredLocks() {
+  //   try {
+  //     const now = new Date();
+  //     const expirationTime = new Date(now.getTime() - 5 * 60 * 1000); // 5 dakika öncesi
       
-      const expiredSeats = await getDocs(query(
-        collection(db, 'seats'),
-        where('status', '==', 'pending'),
-        where('lockedAt', '<', expirationTime)
-      ));
+  //     const expiredSeats = await getDocs(query(
+  //       collection(db, 'seats'),
+  //       where('status', '==', 'pending'),
+  //       where('lockedAt', '<', expirationTime)
+  //     ));
       
-      if (!expiredSeats.empty) {
-        const batch = writeBatch(db);
-        expiredSeats.forEach(doc => {
-          batch.update(doc.ref, { 
-            status: 'available',
-            updatedAt: new Date()
-          });
-        });
+  //     if (!expiredSeats.empty) {
+  //       const batch = writeBatch(db);
+  //       expiredSeats.forEach(doc => {
+  //         batch.update(doc.ref, { 
+  //           status: 'available',
+  //           updatedAt: new Date()
+  //         });
+  //       });
         
-        await batch.commit();
-        //console.log(`${expiredSeats.size} adet süresi dolmuş kilit kaldırıldı`);
-      }
+  //       await batch.commit();
+  //       //console.log(`${expiredSeats.size} adet süresi dolmuş kilit kaldırıldı`);
+  //     }
       
-      return { success: true };
-    } catch (error) {
-      //console.error('Süresi dolmuş kilitleri kaldırma hatası:', error);
-      return { success: false, error: error.message };
-    }
-  },
+  //     return { success: true };
+  //   } catch (error) {
+  //     //console.error('Süresi dolmuş kilitleri kaldırma hatası:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // },
 
   // Çoklu koltuk kilitleme işlemi
   async lockMultipleSeats(seatIds, showDate) {
