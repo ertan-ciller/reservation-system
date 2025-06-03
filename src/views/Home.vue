@@ -6,7 +6,7 @@ import { reservationService } from '../services/reservationService'
 import { addDoc, collection } from 'firebase/firestore'
 import { db } from '../services/firebase'
 import DateSelector from '../components/DateSelector.vue'
-import { toastService } from '../services/toastService'
+import { alertService } from '../services/alertService'
 
 const selectedDate = ref('')
 const selectedSeats = ref([])
@@ -32,12 +32,12 @@ const totalPrice = computed(() => {
 
 const handleSeatSelect = async (seat) => {
   if (!selectedDate.value) {
-    toastService.warning('Lütfen önce bir tarih seçiniz!');
+    alertService.warning('Lütfen önce bir tarih seçiniz!');
     return;
   }
 
   if (selectedSeats.value.length >= 10 && !selectedSeats.value.some(s => s.seatFullId === seat.seatFullId)) {
-    toastService.warning('En fazla 10 koltuk seçebilirsiniz!');
+    alertService.warning('En fazla 10 koltuk seçebilirsiniz!');
     return;
   }
 
@@ -53,7 +53,7 @@ const handleSeatSelect = async (seat) => {
     );
 
     if (!isAvailable) {
-      toastService.error('Bu koltuk müsait değil!');
+      alertService.error('Bu koltuk müsait değil!');
       return;
     }
 
@@ -67,7 +67,7 @@ const handleSeatSelect = async (seat) => {
     }
   } catch (error) {
     console.error('Koltuk seçimi hatası:', error);
-    toastService.error('Koltuk seçimi sırasında bir hata oluştu');
+    alertService.error('Koltuk seçimi sırasında bir hata oluştu');
   }
 }
 
@@ -80,21 +80,21 @@ const removeSeat = (seat) => {
 
 const handleReservationClick = async () => {
   if (selectedSeats.value.length === 0) {
-    toastService.warning('Lütfen en az bir koltuk seçiniz!')
+    alertService.warning('Lütfen en az bir koltuk seçiniz!')
     return
   }
   const isActiveSession = await reservationService.checkActiveSession(selectedSeats.value.map(seat => seat.seatFullId),selectedDate.value)
   console.log("Seçilen Tarih ",selectedDate);
 
   if(isActiveSession.length>0){
-    toastService.error('Bu koltuklar zaten başka bir kullanıcı tarafından seçildiği için seçilemez! '+isActiveSession.map(seat => seat).join(', '));
+    alertService.error('Bu koltuklar zaten başka bir kullanıcı tarafından seçildiği için seçilemez! Koltuk/Koltukler: '+isActiveSession.map(seat => seat).join(', '));
     return;
   }else{
     const sessionResult = await reservationService.createSession(selectedSeats.value.map(seat => seat.seatFullId),selectedDate.value)
     if(sessionResult.success){
       isDialogOpen.value = true
     }else{
-      toastService.error(sessionResult.error)
+      alertService.error(sessionResult.error)
     }
   }
 
@@ -111,7 +111,7 @@ const handleDialogClose = () => {
 const handleReservation = async (userInfo) => {
   try {
     if (!selectedDate.value) {
-      toastService.error('Lütfen bir tarih seçiniz!');
+      alertService.error('Lütfen bir tarih seçiniz!');
       return;
     }
 
@@ -142,14 +142,14 @@ const handleReservation = async (userInfo) => {
     if (result.success) {
       isDialogOpen.value = false;
       selectedSeats.value = [];
-      toastService.success('Rezervasyonlarınız başarıyla oluşturuldu!');
+      alertService.success('Rezervasyonlarınız başarıyla oluşturuldu! Rezerve edilen koltuklar mail olarak gönderildi!');
     } else {
       errorMessage.value = result.error || 'Bazı rezervasyonlar oluşturulamadı.';
-      toastService.error(result.error || 'Bazı rezervasyonlar oluşturulamadı.');
+      alertService.error(result.error || 'Bazı rezervasyonlar oluşturulamadı.');
     }
   } catch (error) {
     errorMessage.value = error.message || 'Rezervasyon oluşturulurken bir hata oluştu.';
-    toastService.error(error.message || 'Rezervasyon oluşturulurken bir hata oluştu.');
+    alertService.error(error.message || 'Rezervasyon oluşturulurken bir hata oluştu.');
     console.error('Rezervasyon hatası:', error);
   } finally {
     isLoading.value = false;
