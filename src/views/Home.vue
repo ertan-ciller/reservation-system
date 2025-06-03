@@ -130,6 +130,7 @@ const handleReservation = async (userInfo) => {
       firstName: userInfo.firstName,
       lastName: userInfo.lastName,
       phoneNumber: userInfo.phoneNumber,
+      email: userInfo.email,
       seatIds: seatIds,
       showDate: selectedDate.value,
       status: 'pending'

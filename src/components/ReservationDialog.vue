@@ -80,13 +80,15 @@ const totalPrice = computed(() => {
 const formData = ref({
   firstName: '',
   lastName: '',
-  phone: ''
+  phone: '',
+  email: ''
 })
 
 const errors = ref({
   firstName: '',
   lastName: '',
-  phone: ''
+  phone: '',
+  email: ''
 })
 
 const successMessage = ref('')
@@ -96,12 +98,18 @@ const validatePhone = (phone) => {
   return phoneRegex.test(phone)
 }
 
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
 const handleSubmit = async () => {
   // Reset errors
   errors.value = {
     firstName: '',
     lastName: '',
-    phone: ''
+    phone: '',
+    email: ''
   }
 
   let hasError = false
@@ -121,23 +129,28 @@ const handleSubmit = async () => {
     hasError = true
   }
 
+  if (!validateEmail(formData.value.email)) {
+    errors.value.email = 'Geçerli bir e-posta adresi giriniz'
+    hasError = true
+  }
+
   if (!hasError) {
     const reservationData = {
       firstName: formData.value.firstName.trim(),
       lastName: formData.value.lastName.trim(),
       phoneNumber: formData.value.phone,
+      email: formData.value.email.trim(),
       seatIds: props.selectedSeats.map(seat => ({
         id: seat.seatNumber,
         row: seat.rowLabel,
         numericId: parseInt(seat.seatNumber)
       })),
       seatFullId: props.selectedSeats.map(seat => seat.seatFullId)
-      
     }
 
     try {
       await emit('submit', reservationData)
-      formData.value = { firstName: '', lastName: '', phone: '' }
+      formData.value = { firstName: '', lastName: '', phone: '', email: '' }
 
       toastService.success('Rezervasyonunuz başarıyla oluşturuldu!')
       props.reservedSeats.push(...reservationData.seatIds)
@@ -149,19 +162,19 @@ const handleSubmit = async () => {
   }
 }
 
-const handlePhoneInput = (event) => {
-  // Sadece rakamları al
-  const numericValue = event.target.value.replace(/\D/g, '')
-  // Maximum 10 karakter olacak şekilde güncelle
-  formData.value.phone = numericValue.slice(0, 10)
-}
-
 const handleNameInput = (event, field) => {
   // Sadece harfleri ve boşlukları al (Türkçe karakterler dahil)
   const letterValue = event.target.value.replace(/\d/g, '')
   // Birden fazla boşluğu tek boşluğa çevir
   const normalizedValue = letterValue.replace(/\s+/g, ' ')
   formData.value[field] = normalizedValue
+}
+
+const handlePhoneInput = (event) => {
+  // Sadece rakamları al
+  const numericValue = event.target.value.replace(/\D/g, '')
+  // Maximum 10 karakter olacak şekilde güncelle
+  formData.value.phone = numericValue.slice(0, 10)
 }
 </script>
 
@@ -236,6 +249,20 @@ const handleNameInput = (event, field) => {
               inputmode="numeric"
             />
             <span class="error-message" v-if="errors.phone">{{ errors.phone }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="email">E-posta</label>
+            <input
+              id="email"
+              v-model="formData.email"
+              type="email"
+              placeholder="E-posta adresiniz"
+              :class="{ 'error': errors.email }"
+              pattern="[^\s@]+@[^\s@]+\.[^\s@]+$"
+              inputmode="email"
+            />
+            <span class="error-message" v-if="errors.email">{{ errors.email }}</span>
           </div>
         </div>
 
