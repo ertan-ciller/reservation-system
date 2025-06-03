@@ -71,6 +71,7 @@ const getIcon = () => {
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 9999;
+  padding: 1rem;
 }
 
 .alert {
@@ -83,6 +84,26 @@ const getIcon = () => {
   gap: 16px;
   min-width: 300px;
   max-width: 500px;
+  margin: 0 16px;
+  width: calc(100% - 32px);
+}
+
+@media (max-width: 480px) {
+  .alert {
+    min-width: auto;
+    padding: 16px 24px;
+    margin: 0 16px;
+    width: calc(100% - 32px);
+    max-width: 100%;
+  }
+
+  .alert-message {
+    font-size: 14px;
+  }
+
+  .alert-icon {
+    font-size: 20px;
+  }
 }
 
 .alert-success {

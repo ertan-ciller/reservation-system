@@ -142,7 +142,7 @@ const handleReservation = async (userInfo) => {
     if (result.success) {
       isDialogOpen.value = false;
       selectedSeats.value = [];
-      alertService.success('Rezervasyonlarınız başarıyla oluşturuldu!');
+      alertService.success('Rezervasyonlarınız başarıyla oluşturuldu! Rezerve edilen koltuklar mail olarak gönderildi!');
     } else {
       errorMessage.value = result.error || 'Bazı rezervasyonlar oluşturulamadı.';
       alertService.error(result.error || 'Bazı rezervasyonlar oluşturulamadı.');

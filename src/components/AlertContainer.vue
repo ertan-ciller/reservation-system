@@ -32,9 +32,24 @@ const handleClose = (id) => {
   bottom: 0;
   pointer-events: none;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .alert-container :deep(.alert-overlay) {
   pointer-events: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .alert-container {
+    padding: 0;
+  }
 }
 </style> 
