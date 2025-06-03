@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { toastService } from '../services/toastService'
+import { alertService } from '../services/alertService'
 import { reservationService } from '../services/reservationService'
 
 const privacyPolicyText = `
@@ -152,12 +152,12 @@ const handleSubmit = async () => {
       await emit('submit', reservationData)
       formData.value = { firstName: '', lastName: '', phone: '', email: '' }
 
-      toastService.success('Rezervasyonunuz başarıyla oluşturuldu!')
+      alertService.success('Rezervasyonunuz başarıyla oluşturuldu!')
       props.reservedSeats.push(...reservationData.seatIds)
       emit('close')
     } catch (error) {
       console.error('Rezervasyon hatası:', error)
-      toastService.error('Rezervasyon oluşturulurken bir hata oluştu.')
+      alertService.error('Rezervasyon oluşturulurken bir hata oluştu.')
     }
   }
 }
